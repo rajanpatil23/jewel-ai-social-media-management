@@ -475,8 +475,8 @@ export default function PostMeta() {
               </Tabs>
             </div>
             {previewTab === "instagram"
-              ? <InstagramPreview image={image} caption={igCaption} location={igLocation} />
-              : <FacebookPreview image={image} caption={fbCaption} cta={fbCta} link={fbLink} />}
+              ? <InstagramPreview image={image} caption={igCaption} location={igLocation} format={format} mediaUrls={mediaUrls} videoUrl={videoUrl} />
+              : <FacebookPreview image={image} caption={fbCaption} cta={fbCta} link={fbLink} format={format} mediaUrls={mediaUrls} videoUrl={videoUrl} />}
             <p className="text-[10px] text-muted-foreground text-center">Approximate render. Final layout depends on the platform.</p>
           </aside>
         </div>

@@ -245,9 +245,9 @@ export default function ImageGen() {
 
           {/* GENERATE TAB — Firefly-style layout */}
           <TabsContent value="generate" className="mt-6">
-            <div className="grid lg:grid-cols-[320px_1fr] gap-6 items-start min-h-[calc(100vh-220px)]">
-              {/* LEFT: Settings panel */}
-              <Card className="rounded-2xl border-border/70 bg-card overflow-hidden lg:sticky lg:top-20 max-h-[calc(100vh-100px)] overflow-y-auto">
+            <div className="grid lg:grid-cols-[320px_1fr] gap-6 items-start h-[calc(100vh-200px)]">
+              {/* LEFT: Settings panel — scrollable */}
+              <Card className="rounded-2xl border-border/70 bg-card h-full overflow-y-auto">
                 {/* General settings */}
                 <Collapsible defaultOpen>
                   <CollapsibleTrigger className="w-full flex items-center justify-between px-5 py-4 group">
@@ -394,8 +394,8 @@ export default function ImageGen() {
                 </Collapsible>
               </Card>
 
-              {/* RIGHT: Canvas area */}
-              <div className="flex flex-col min-w-0 min-h-[calc(100vh-220px)]">
+              {/* RIGHT: Canvas area — static, no scroll */}
+              <div className="flex flex-col min-w-0 h-full overflow-hidden">
                 <div className="flex-1 flex items-center justify-center">
                   {!loading && history.length <= 3 && results === SAMPLES ? (
                     <div className="text-center max-w-md mx-auto px-6 py-12">
@@ -461,7 +461,7 @@ export default function ImageGen() {
                 </div>
 
                 {/* Bottom prompt bar */}
-                <div className="mt-6 sticky bottom-4">
+                <div className="mt-4 shrink-0">
                   <Card className="rounded-2xl border-border/70 bg-card shadow-[var(--shadow-elegant)] p-4">
                     <Textarea
                       value={prompt}

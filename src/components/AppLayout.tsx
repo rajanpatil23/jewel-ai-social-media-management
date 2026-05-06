@@ -207,6 +207,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </SheetContent>
             </Sheet>
 
+            {/* Desktop sidebar toggle */}
+            <button
+              onClick={toggleSidebar}
+              className="hidden md:inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary"
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
             {/* Mobile compact brand */}
             <div className="md:hidden flex items-center gap-2 min-w-0">
               <img src={advoraLogo} alt="Advora" className="h-6 w-6 object-contain" />

@@ -6,63 +6,59 @@
 
 @layer base {
   :root {
-    /* Core surfaces */
-    --background: 220 20% 98%;
-    --foreground: 222 25% 12%;
+    /* Luxury surfaces — soft beige / off-white */
+    --background: 36 30% 97%;
+    --foreground: 30 15% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 25% 12%;
+    --card-foreground: 30 15% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 25% 12%;
+    --popover-foreground: 30 15% 12%;
 
-    /* Accent — refined indigo */
-    --primary: 230 65% 55%;
+    /* Accent — elegant gold #C8A96B */
+    --primary: 38 45% 60%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 230 80% 65%;
-    --primary-deep: 230 60% 45%;
+    --primary-glow: 38 50% 68%;
+    --primary-deep: 36 40% 48%;
 
-    --secondary: 220 15% 95%;
-    --secondary-foreground: 222 25% 18%;
+    --secondary: 36 25% 94%;
+    --secondary-foreground: 30 15% 18%;
 
-    --muted: 220 15% 96%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 36 20% 95%;
+    --muted-foreground: 30 8% 42%;
 
-    --accent: 220 15% 94%;
-    --accent-foreground: 222 25% 18%;
+    --accent: 38 35% 92%;
+    --accent-foreground: 30 15% 18%;
 
-    --destructive: 0 75% 55%;
+    --destructive: 0 70% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 60% 40%;
+    --success: 152 50% 38%;
 
-    --border: 220 15% 90%;
-    --input: 220 15% 92%;
-    --ring: 230 65% 55%;
+    --border: 36 20% 88%;
+    --input: 36 20% 90%;
+    --ring: 38 45% 60%;
 
-    --radius: 0.625rem;
+    --radius: 0.75rem;
 
-    /* Soft, flat gradients (no flashy gold) */
-    --gradient-gold: linear-gradient(135deg, hsl(230 65% 55%), hsl(230 80% 65%));
-    --gradient-gold-soft: linear-gradient(135deg, hsl(230 65% 55% / 0.08), hsl(230 80% 65% / 0.04));
-    --gradient-dark: linear-gradient(180deg, hsl(220 20% 99%), hsl(220 20% 97%));
-    --gradient-radial-gold: none;
-    --gradient-text-gold: linear-gradient(135deg, hsl(230 65% 55%), hsl(230 60% 45%));
+    --gradient-gold: linear-gradient(135deg, hsl(38 45% 60%), hsl(38 50% 70%));
+    --gradient-gold-soft: linear-gradient(135deg, hsl(38 45% 60% / 0.10), hsl(38 50% 70% / 0.04));
+    --gradient-dark: linear-gradient(180deg, hsl(36 30% 98%), hsl(36 25% 96%));
+    --gradient-text-gold: linear-gradient(135deg, hsl(36 40% 48%), hsl(38 45% 60%));
 
-    /* Subtle shadows */
-    --shadow-gold: 0 8px 24px -12px hsl(230 65% 55% / 0.25);
-    --shadow-elegant: 0 1px 3px 0 hsl(220 25% 15% / 0.04), 0 1px 2px -1px hsl(220 25% 15% / 0.04);
-    --shadow-inset-gold: none;
+    --shadow-gold: 0 10px 30px -16px hsl(38 45% 50% / 0.35);
+    --shadow-elegant: 0 1px 2px 0 hsl(30 15% 15% / 0.04), 0 4px 14px -6px hsl(30 15% 15% / 0.06);
+    --shadow-inset-gold: inset 0 1px 0 0 hsl(0 0% 100% / 0.6);
 
-    /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 20% 25%;
-    --sidebar-primary: 230 65% 55%;
+    --sidebar-foreground: 30 15% 25%;
+    --sidebar-primary: 38 45% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 96%;
-    --sidebar-accent-foreground: 230 65% 50%;
-    --sidebar-border: 220 15% 92%;
-    --sidebar-ring: 230 65% 55%;
+    --sidebar-accent: 36 25% 95%;
+    --sidebar-accent-foreground: 36 40% 45%;
+    --sidebar-border: 36 20% 90%;
+    --sidebar-ring: 38 45% 60%;
 
     --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -98,9 +94,15 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
   h1, h2, h3, h4, .font-display {
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    letter-spacing: -0.02em;
-    font-weight: 600;
+    font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+    letter-spacing: -0.015em;
+    font-weight: 500;
+  }
+  .gold-text {
+    background: var(--gradient-text-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 }
 

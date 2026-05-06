@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ImageGen from "./pages/ImageGen";
 import PostMeta from "./pages/PostMeta";
+import Dashboard from "./pages/Dashboard";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -17,7 +19,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<ImageGen />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/post" element={<PostMeta />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

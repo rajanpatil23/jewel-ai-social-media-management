@@ -13,28 +13,29 @@ import ring from "@/assets/product-ring.jpg";
 import necklace from "@/assets/product-necklace.jpg";
 import earrings from "@/assets/product-earrings.jpg";
 import bracelet from "@/assets/product-bracelet.jpg";
-import hero from "@/assets/hero-jewelry.jpg";
-import ad from "@/assets/ad-creative.jpg";
 
-const SAMPLES = [ring, necklace, earrings, bracelet, hero, ad];
+const SAMPLES = [
+  { src: ring, label: "Diamond Solitaire Ring" },
+  { src: necklace, label: "Gold Pendant Necklace" },
+  { src: earrings, label: "Pearl Drop Earrings" },
+  { src: bracelet, label: "Tennis Bracelet" },
+];
 
 export default function ImageGen() {
-  const [prompt, setPrompt] = useState("Elegant 18k gold diamond ring on marble, soft studio light");
+  const [prompt, setPrompt] = useState("Elegant 18k gold diamond solitaire ring on cream silk, soft studio lighting");
   const [style, setStyle] = useState("studio");
   const [ratio, setRatio] = useState("1:1");
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<string[]>([]);
+  const [results, setResults] = useState(SAMPLES);
   const navigate = useNavigate();
 
   const generate = () => {
     if (!prompt.trim()) return;
     setLoading(true);
-    setResults([]);
     setTimeout(() => {
-      const shuffled = [...SAMPLES].sort(() => Math.random() - 0.5).slice(0, 4);
-      setResults(shuffled);
+      setResults([...SAMPLES].sort(() => Math.random() - 0.5));
       setLoading(false);
-      toast.success("4 images generated");
+      toast.success("4 new creatives generated");
     }, 1400);
   };
 
@@ -46,31 +47,39 @@ export default function ImageGen() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">AI Image Generation</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Describe your product. We'll create high-quality visuals ready for Instagram & Facebook.
+      <div className="space-y-10">
+        {/* Hero */}
+        <div className="space-y-3 text-center md:text-left">
+          <span className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.2em] text-[hsl(var(--primary-deep))]">
+            <Sparkles className="h-3 w-3" /> AI Studio
+          </span>
+          <h1 className="font-display text-4xl md:text-5xl tracking-tight">
+            Create breathtaking <span className="gold-text">jewelry creatives</span>
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground max-w-xl">
+            AI-powered content creation for luxury jewelry brands. From product shot to scroll-stopping post in seconds.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-[360px_1fr] gap-6">
-          <Card className="p-5 space-y-4 h-fit">
+        <div className="grid lg:grid-cols-[380px_1fr] gap-6 lg:gap-8 items-start">
+          {/* Form */}
+          <Card className="p-6 space-y-5 rounded-2xl border-border/70 shadow-[var(--shadow-elegant)] bg-card">
             <div className="space-y-2">
-              <Label htmlFor="prompt">Prompt</Label>
+              <Label htmlFor="prompt" className="text-xs uppercase tracking-wider text-muted-foreground">Describe your piece</Label>
               <Textarea
                 id="prompt"
-                rows={5}
+                rows={4}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe the image…"
+                placeholder="A pearl necklace on marble…"
+                className="resize-none rounded-lg border-border/70 bg-background focus-visible:ring-[hsl(var(--primary))]"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Style</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Style</Label>
                 <Select value={style} onValueChange={setStyle}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-lg border-border/70 bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="studio">Studio</SelectItem>
                     <SelectItem value="lifestyle">Lifestyle</SelectItem>
@@ -79,10 +88,10 @@ export default function ImageGen() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Ratio</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Ratio</Label>
                 <Select value={ratio} onValueChange={setRatio}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-lg border-border/70 bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1:1">Square 1:1</SelectItem>
                     <SelectItem value="4:5">Portrait 4:5</SelectItem>
@@ -92,44 +101,53 @@ export default function ImageGen() {
                 </Select>
               </div>
             </div>
-            <Button onClick={generate} disabled={loading} className="w-full">
+            <Button onClick={generate} disabled={loading} variant="gold" size="lg" className="w-full rounded-lg font-medium">
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              {loading ? "Generating…" : "Generate"}
+              {loading ? "Generating…" : "Generate Creatives"}
             </Button>
+            <p className="text-[11px] text-center text-muted-foreground pt-1">
+              4 creatives per generation · ~10 seconds
+            </p>
           </Card>
 
-          <Card className="p-5 min-h-[420px]">
-            {!results.length && !loading && (
-              <div className="h-full min-h-[380px] flex flex-col items-center justify-center text-center text-muted-foreground">
-                <Sparkles className="h-8 w-8 mb-3 opacity-50" />
-                <p className="text-sm">Your generated images will appear here</p>
+          {/* Results */}
+          <div className="space-y-4">
+            <div className="flex items-end justify-between">
+              <div>
+                <h2 className="font-display text-2xl tracking-tight">Generated Results</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Hover a creative to publish or download.</p>
               </div>
-            )}
-            {loading && (
-              <div className="grid grid-cols-2 gap-4">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="aspect-square rounded-lg bg-secondary animate-pulse" />
-                ))}
-              </div>
-            )}
-            {!!results.length && (
-              <div className="grid grid-cols-2 gap-4">
-                {results.map((src, i) => (
-                  <div key={i} className="group relative rounded-lg overflow-hidden border border-border">
-                    <img src={src} alt="Generated" className="aspect-square w-full object-cover" />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <Button size="sm" variant="secondary" onClick={() => useForPost(src)}>
-                        <Send className="h-3.5 w-3.5 mr-1.5" /> Post
-                      </Button>
-                      <Button size="sm" variant="secondary">
-                        <Download className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+              <span className="text-xs text-muted-foreground">{results.length} images</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 md:gap-5">
+              {(loading ? Array(4).fill(null) : results).map((item, i) => (
+                <Card
+                  key={i}
+                  className="group relative overflow-hidden rounded-xl border-border/70 shadow-[var(--shadow-elegant)] hover:shadow-[var(--shadow-gold)] transition-shadow bg-card"
+                >
+                  {loading || !item ? (
+                    <div className="aspect-square bg-secondary animate-pulse" />
+                  ) : (
+                    <>
+                      <img src={item.src} alt={item.label} className="aspect-square w-full object-cover" />
+                      <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/70 via-black/30 to-transparent text-white">
+                        <p className="text-xs font-medium">{item.label}</p>
+                      </div>
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <Button size="sm" variant="gold" className="rounded-md" onClick={() => useForPost(item.src)}>
+                          <Send className="h-3.5 w-3.5 mr-1.5" /> Publish
+                        </Button>
+                        <Button size="sm" variant="secondary" className="rounded-md" onClick={() => toast.success("Download started")}>
+                          <Download className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </AppLayout>

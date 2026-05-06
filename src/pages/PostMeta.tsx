@@ -45,6 +45,8 @@ export default function PostMeta() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const navigate = useNavigate();
   const gallery = useGallery();
+  const { isConnected } = useConnections();
+  const metaConnected = isConnected("meta");
 
   const [syncCaptions, setSyncCaptions] = useState(true);
   const [igCaption, setIgCaption] = useState("Timeless brilliance, crafted for you. ✨\n\n#luxuryjewelry #handcrafted #finejewelry");
@@ -139,7 +141,15 @@ export default function PostMeta() {
                 {schedule && date && time ? ` · ${date} ${time}` : ""}
               </p>
             </div>
-            <MetaBadge />
+            {metaConnected ? (
+              <Badge variant="secondary" className="gap-1.5 hidden md:inline-flex">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Meta connected
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="gap-1.5 hidden md:inline-flex cursor-pointer" onClick={() => navigate("/connections")}>
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Connect Meta
+              </Badge>
+            )}
 
           </div>
           <div className="flex items-center gap-2">

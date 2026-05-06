@@ -24,8 +24,12 @@ function meta_start($m) {
         // Fallback to MOCK connect when app isn't configured yet
         return meta_mock_connect($u);
     }
+    $state = bin2hex(random_bytes(24));
+    // Store in DB (works across domains/popups where session cookie may be lost)
+    db()->prepare('INSERT INTO oauth_states (state,user_id,provider) VALUES (?,?,?)')
+        ->execute([$state, $u['id'], 'meta']);
+    // Also keep session copy as a fallback
     start_session_once();
-    $state = bin2hex(random_bytes(16));
     $_SESSION['meta_state'] = $state;
     $_SESSION['meta_uid']   = $u['id'];
     json_out(['mode' => 'oauth', 'url' => meta_oauth_url($state)]);
@@ -50,8 +54,6 @@ function meta_callback($m) {
     start_session_once();
     $code  = $_GET['code']  ?? '';
     $state = $_GET['state'] ?? '';
-    $uid   = $_SESSION['meta_uid']   ?? null;
-    $exp   = $_SESSION['meta_state'] ?? null;
 
     $errHtml = function ($msg) {
         echo '<!doctype html><meta charset="utf-8"><title>Connect failed</title>'
@@ -61,9 +63,19 @@ function meta_callback($m) {
         exit;
     };
 
-    if (!$code || !$state || !$uid || !$exp || !hash_equals($exp, $state)) {
-        $errHtml('Invalid OAuth state. Please try again.');
+    if (!$code || !$state) $errHtml('Missing code or state from Facebook.');
+
+    // Look up state in DB (primary), fall back to session
+    $uid = null;
+    $q = db()->prepare('SELECT user_id FROM oauth_states WHERE state = ? AND provider = ? AND created_at > (NOW() - INTERVAL 1 HOUR)');
+    $q->execute([$state, 'meta']);
+    if ($row = $q->fetch()) {
+        $uid = $row['user_id'];
+        db()->prepare('DELETE FROM oauth_states WHERE state = ?')->execute([$state]);
+    } elseif (!empty($_SESSION['meta_state']) && hash_equals($_SESSION['meta_state'], $state)) {
+        $uid = $_SESSION['meta_uid'] ?? null;
     }
+    if (!$uid) $errHtml('Invalid OAuth state. Please try again.');
 
     try {
         $tok    = meta_exchange_code($code);

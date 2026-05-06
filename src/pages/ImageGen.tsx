@@ -13,7 +13,15 @@ import {
   Square, RectangleVertical, RectangleHorizontal, Smartphone, History, Copy, Heart,
   Upload, X, Shuffle, FolderHeart, Check, Images, Pencil,
   Brush, Eraser, Maximize2, ArrowUpRightSquare, Scissors, FileImage, Plus,
+  ChevronDown, Info, Type,
 } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 

@@ -628,7 +628,7 @@ function InstagramPreview({ image, caption, location, format, mediaUrls, videoUr
   );
 }
 
-function FacebookPreview({ image, caption, cta, link }: { image: string; caption: string; cta: string; link: string }) {
+function FacebookPreview({ image, caption, cta, link, format, mediaUrls, videoUrl }: { image: string; caption: string; cta: string; link: string; format: Format; mediaUrls?: string[]; videoUrl?: string }) {
   return (
     <Card className="overflow-hidden">
       <div className="flex items-center justify-between p-3">

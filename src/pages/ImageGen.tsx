@@ -95,7 +95,7 @@ export default function ImageGen() {
   const [quality, setQuality] = useState([75]);
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
-  const [results, setResults] = useState<GenItem[]>(SAMPLES);
+  const [results, setResults] = useState<GenItem[]>([]);
   const [referenceImg, setReferenceImg] = useState<string | null>(null);
   const [collections, setCollections] = useState<GenItem[]>([]);
   const [gallery, setGallery] = useState<GenItem[]>(SAMPLES);

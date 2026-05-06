@@ -461,7 +461,7 @@ export default function ImageGen() {
                 </div>
 
                 {/* Bottom prompt bar */}
-                <div className="mt-6 sticky bottom-4">
+                <div className="mt-4 shrink-0">
                   <Card className="rounded-2xl border-border/70 bg-card shadow-[var(--shadow-elegant)] p-4">
                     <Textarea
                       value={prompt}

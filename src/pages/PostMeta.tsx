@@ -193,14 +193,8 @@ export default function PostMeta() {
                   </div>
                   {schedule && (
                     <div className="grid grid-cols-2 gap-3 pt-1">
-                      <div className="relative">
-                        <CalendarIcon className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="pl-9" />
-                      </div>
-                      <div className="relative">
-                        <Clock className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="pl-9" />
-                      </div>
+                      <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full" />
+                      <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" />
                     </div>
                   )}
                 </div>

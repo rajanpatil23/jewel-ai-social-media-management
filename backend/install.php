@@ -45,6 +45,7 @@ try {
         caption_ig      TEXT,
         caption_fb      TEXT,
         media_url       TEXT,
+        media_urls      JSON NULL,
         format          VARCHAR(20) NOT NULL DEFAULT 'image',
         platforms       VARCHAR(120) NOT NULL DEFAULT 'instagram,facebook',
         status          VARCHAR(20) NOT NULL DEFAULT 'draft',

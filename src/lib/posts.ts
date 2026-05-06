@@ -11,6 +11,7 @@ export interface Post {
   captionIg: string;
   captionFb: string;
   mediaUrl: string;
+  mediaUrls?: string[];
   format: PostFormat;
   platforms: Platform[];
   status: PostStatus;
@@ -37,6 +38,12 @@ function fromRow(r: any): Post {
     captionIg: r.caption_ig ?? r.captionIg ?? "",
     captionFb: r.caption_fb ?? r.captionFb ?? "",
     mediaUrl: r.media_url ?? r.mediaUrl ?? "",
+    mediaUrls: (() => {
+      const v = r.media_urls ?? r.mediaUrls;
+      if (Array.isArray(v)) return v;
+      if (typeof v === "string" && v) { try { return JSON.parse(v); } catch { return undefined; } }
+      return undefined;
+    })(),
     format: (r.format || "single") as PostFormat,
     platforms: typeof r.platforms === "string"
       ? (r.platforms.split(",").filter(Boolean) as Platform[])
@@ -54,6 +61,7 @@ export type PostInput = {
   captionIg: string;
   captionFb: string;
   mediaUrl: string;
+  mediaUrls?: string[];
   format: PostFormat;
   platforms: Platform[];
   scheduledAt?: string | null;
@@ -68,6 +76,7 @@ export async function createPost(input: PostInput): Promise<Post> {
     captionIg: input.captionIg,
     captionFb: input.captionFb,
     mediaUrl: input.mediaUrl,
+    mediaUrls: input.mediaUrls,
     format: input.format,
     platforms: input.platforms,
     status: input.status || (input.scheduledAt ? "scheduled" : "draft"),
@@ -82,6 +91,7 @@ export async function createPost(input: PostInput): Promise<Post> {
     captionIg: input.captionIg,
     captionFb: input.captionFb,
     mediaUrl: input.mediaUrl,
+    mediaUrls: input.mediaUrls,
     format: input.format,
     platforms: input.platforms.join(","),
     status: input.status,

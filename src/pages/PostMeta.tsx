@@ -40,6 +40,8 @@ const formatMeta: Record<Format, { label: string; icon: typeof Square }> = {
 
 export default function PostMeta() {
   const [image, setImage] = useState<string>(hero);
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [videoUrl, setVideoUrl] = useState<string>("");
   const [format, setFormat] = useState<Format>("single");
   const [instagram, setInstagram] = useState(true);
   const [facebook, setFacebook] = useState(true);
@@ -48,6 +50,8 @@ export default function PostMeta() {
   const gallery = useGallery();
   const { isConnected } = useConnections();
   const metaConnected = isConnected("meta");
+  const isReel = format === "reel";
+  const isCarousel = format === "carousel";
 
   const [syncCaptions, setSyncCaptions] = useState(true);
   const [igCaption, setIgCaption] = useState("Timeless brilliance, crafted for you. ✨\n\n#luxuryjewelry #handcrafted #finejewelry");
@@ -96,7 +100,13 @@ export default function PostMeta() {
     const platforms = [instagram && "instagram", facebook && "facebook"].filter(Boolean) as ("instagram"|"facebook")[];
     const scheduledAt = status === "scheduled" && schedule ? new Date(`${date}T${time}`).toISOString() : null;
     const title = (igCaption || fbCaption).split("\n")[0].slice(0, 80) || "Untitled post";
-    return { title, captionIg: igCaption, captionFb: fbCaption, mediaUrl: image, format, platforms, scheduledAt, status };
+    const primary = isReel ? videoUrl : (isCarousel && mediaUrls[0]) || image;
+    return {
+      title, captionIg: igCaption, captionFb: fbCaption,
+      mediaUrl: primary,
+      mediaUrls: isCarousel ? mediaUrls : undefined,
+      format, platforms, scheduledAt, status,
+    };
   };
 
   const handleSaveDraft = async () => {
@@ -114,6 +124,9 @@ export default function PostMeta() {
     if (instagram && igHashtagsOver) return toast.error("Instagram allows max 30 hashtags");
     if (facebook && fbOver) return toast.error("Facebook message exceeds limit");
     if (schedule && (!date || !time)) return toast.error("Pick date & time to schedule");
+    if (isCarousel && mediaUrls.length < 2) return toast.error("Carousel needs 2–10 images");
+    if (isCarousel && mediaUrls.length > 10) return toast.error("Carousel max is 10 images");
+    if (isReel && !videoUrl) return toast.error("Upload a video for the Reel");
     setPosting(true); setPosted(false);
     try {
       await createPost(buildPayload(schedule ? "scheduled" : "published"));
@@ -129,17 +142,50 @@ export default function PostMeta() {
   };
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    // Optimistic preview
-    setImage(URL.createObjectURL(file));
-    // Best-effort upload to backend so cron can publish a public URL
-    const r = await tryApi(() => api.upload<{ url: string }>("/upload", file));
-    if (r?.url) {
-      setImage(r.url);
-      toast.success("Uploaded");
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    e.target.value = "";
+
+    if (isReel) {
+      const f = files[0];
+      if (!f.type.startsWith("video/")) return toast.error("Reel needs a video file (.mp4)");
+      setVideoUrl(URL.createObjectURL(f));
+      const r = await tryApi(() => api.upload<{ url: string }>("/upload", f));
+      if (r?.url) { setVideoUrl(r.url); toast.success("Video uploaded"); }
+      return;
     }
+
+    if (isCarousel) {
+      const previews = files.map(f => URL.createObjectURL(f));
+      setMediaUrls(prev => [...prev, ...previews].slice(0, 10));
+      const uploaded: string[] = [];
+      for (const f of files) {
+        const r = await tryApi(() => api.upload<{ url: string }>("/upload", f));
+        if (r?.url) uploaded.push(r.url);
+      }
+      if (uploaded.length) {
+        setMediaUrls(prev => {
+          const filtered = prev.filter(u => !previews.includes(u));
+          return [...filtered, ...uploaded].slice(0, 10);
+        });
+        toast.success(`Uploaded ${uploaded.length}`);
+      }
+      return;
+    }
+
+    const file = files[0];
+    setImage(URL.createObjectURL(file));
+    const r = await tryApi(() => api.upload<{ url: string }>("/upload", file));
+    if (r?.url) { setImage(r.url); toast.success("Uploaded"); }
   };
+
+  const removeCarouselItem = (i: number) => setMediaUrls(prev => prev.filter((_, idx) => idx !== i));
+
+  // Reset carousel/video state when format changes
+  useEffect(() => {
+    if (!isCarousel) setMediaUrls([]);
+    if (!isReel) setVideoUrl("");
+  }, [format, isCarousel, isReel]);
 
   return (
     <AppLayout>
@@ -184,12 +230,25 @@ export default function PostMeta() {
             <SectionCard step={1} title="Media" subtitle="Pick from your AI-generated gallery, upload, or generate something new.">
               <div className="grid sm:grid-cols-[200px_1fr] gap-4">
                 <div className="relative rounded-lg overflow-hidden border border-border bg-secondary aspect-square group">
-                  <img src={image} alt="Post media" className="w-full h-full object-cover" />
-                  <button onClick={() => setPickerOpen(true)} className="absolute inset-0 flex items-center justify-center bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-background border border-border text-xs font-medium">
-                      <Images className="h-3.5 w-3.5" /> Change
-                    </span>
-                  </button>
+                  {isReel ? (
+                    videoUrl ? (
+                      <video src={videoUrl} controls className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-1.5">
+                        <Film className="h-7 w-7" />
+                        <span className="text-[11px]">Upload a video</span>
+                      </div>
+                    )
+                  ) : (
+                    <>
+                      <img src={image} alt="Post media" className="w-full h-full object-cover" />
+                      <button onClick={() => setPickerOpen(true)} className="absolute inset-0 flex items-center justify-center bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-background border border-border text-xs font-medium">
+                          <Images className="h-3.5 w-3.5" /> Change
+                        </span>
+                      </button>
+                    </>
+                  )}
                 </div>
                 <div className="space-y-3">
                   <div>
@@ -211,24 +270,52 @@ export default function PostMeta() {
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} className="gap-1.5 text-xs">
+                    <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} disabled={isReel} className="gap-1.5 text-xs">
                       <Images className="h-3.5 w-3.5" /> Gallery
                     </Button>
                     <label className="inline-flex items-center justify-center gap-1.5 text-xs cursor-pointer border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md h-9 px-3 font-medium">
-                      <ImagePlus className="h-3.5 w-3.5" /> Upload
-                      <input type="file" accept="image/*,video/*" className="hidden" onChange={onUpload} />
+                      <ImagePlus className="h-3.5 w-3.5" />
+                      {isReel ? "Upload video" : isCarousel ? "Add images" : "Upload"}
+                      <input
+                        type="file"
+                        accept={isReel ? "video/mp4,video/quicktime" : "image/*"}
+                        multiple={isCarousel}
+                        className="hidden"
+                        onChange={onUpload}
+                      />
                     </label>
                     <Button variant="outline" size="sm" onClick={() => navigate("/studio")} className="gap-1.5 text-xs">
                       <Sparkles className="h-3.5 w-3.5" /> Generate
                     </Button>
                   </div>
+                  {isCarousel && (
+                    <p className="text-[11px] text-muted-foreground">{mediaUrls.length}/10 slides · need at least 2</p>
+                  )}
+                  {isReel && (
+                    <p className="text-[11px] text-muted-foreground">MP4, 9:16 vertical recommended. Max 60s for Reels.</p>
+                  )}
                 </div>
               </div>
+
+              {isCarousel && mediaUrls.length > 0 && (
+                <div className="mt-4 grid grid-cols-5 gap-2">
+                  {mediaUrls.map((src, i) => (
+                    <div key={`${src}-${i}`} className="relative aspect-square rounded-md overflow-hidden border border-border group">
+                      <img src={src} alt="" className="w-full h-full object-cover" />
+                      <span className="absolute top-1 left-1 h-5 w-5 rounded-full bg-background/90 text-foreground text-[10px] font-semibold flex items-center justify-center">{i + 1}</span>
+                      <button onClick={() => removeCarouselItem(i)} className="absolute top-1 right-1 h-5 w-5 rounded-full bg-background/90 text-destructive text-xs leading-none opacity-0 group-hover:opacity-100">×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
                 <DialogContent className="max-w-3xl">
                   <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><Images className="h-4 w-4" /> Pick from gallery</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Images className="h-4 w-4" />
+                      {isCarousel ? "Add to carousel" : "Pick from gallery"}
+                    </DialogTitle>
                   </DialogHeader>
                   <GalleryPicker
                     items={[
@@ -236,7 +323,16 @@ export default function PostMeta() {
                       ...Object.entries(productImages).filter(([k]) => k !== "ad").map(([k, src]) => ({ src: src as string, label: k })),
                     ]}
                     selected={image}
-                    onPick={(src) => { setImage(src); setPickerOpen(false); toast.success("Image selected"); }}
+                    onPick={(src) => {
+                      if (isCarousel) {
+                        setMediaUrls(prev => prev.includes(src) ? prev : [...prev, src].slice(0, 10));
+                        toast.success("Added to carousel");
+                      } else {
+                        setImage(src);
+                        setPickerOpen(false);
+                        toast.success("Image selected");
+                      }
+                    }}
                     onGenerate={() => { setPickerOpen(false); navigate("/studio"); }}
                   />
                 </DialogContent>
@@ -379,8 +475,8 @@ export default function PostMeta() {
               </Tabs>
             </div>
             {previewTab === "instagram"
-              ? <InstagramPreview image={image} caption={igCaption} location={igLocation} />
-              : <FacebookPreview image={image} caption={fbCaption} cta={fbCta} link={fbLink} />}
+              ? <InstagramPreview image={image} caption={igCaption} location={igLocation} format={format} mediaUrls={mediaUrls} videoUrl={videoUrl} />
+              : <FacebookPreview image={image} caption={fbCaption} cta={fbCta} link={fbLink} format={format} mediaUrls={mediaUrls} videoUrl={videoUrl} />}
             <p className="text-[10px] text-muted-foreground text-center">Approximate render. Final layout depends on the platform.</p>
           </aside>
         </div>
@@ -479,7 +575,28 @@ function Field({ label, icon, children }: { label: string; icon?: React.ReactNod
   );
 }
 
-function InstagramPreview({ image, caption, location }: { image: string; caption: string; location?: string }) {
+function MediaBlock({ image, format, mediaUrls, videoUrl, aspect = "aspect-square" }: { image: string; format: Format; mediaUrls?: string[]; videoUrl?: string; aspect?: string }) {
+  if (format === "reel") {
+    return videoUrl
+      ? <video src={videoUrl} controls className={`w-full ${aspect === "aspect-square" ? "aspect-[9/16]" : aspect} object-cover bg-black`} />
+      : <div className={`w-full ${aspect} bg-secondary flex items-center justify-center text-muted-foreground`}><Film className="h-8 w-8" /></div>;
+  }
+  if (format === "carousel" && mediaUrls && mediaUrls.length > 0) {
+    return (
+      <div className={`relative w-full ${aspect} overflow-hidden bg-black`}>
+        <div className="flex h-full w-full snap-x snap-mandatory overflow-x-auto">
+          {mediaUrls.map((src, i) => (
+            <img key={`${src}-${i}`} src={src} alt="" className="h-full w-full flex-shrink-0 snap-start object-cover" />
+          ))}
+        </div>
+        <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-background/80 text-[10px] font-medium">1/{mediaUrls.length}</div>
+      </div>
+    );
+  }
+  return <img src={image} alt="" className={`w-full ${aspect} object-cover`} />;
+}
+
+function InstagramPreview({ image, caption, location, format, mediaUrls, videoUrl }: { image: string; caption: string; location?: string; format: Format; mediaUrls?: string[]; videoUrl?: string }) {
   return (
     <Card className="overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
@@ -497,7 +614,8 @@ function InstagramPreview({ image, caption, location }: { image: string; caption
         </div>
         <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
       </div>
-      <img src={image} alt="" className="w-full aspect-square object-cover" />
+      <MediaBlock image={image} format={format} mediaUrls={mediaUrls} videoUrl={videoUrl} />
+
       <div className="p-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3"><Heart className="h-5 w-5" /><MessageCircle className="h-5 w-5" /><SendIcon className="h-5 w-5" /></div>
@@ -510,7 +628,7 @@ function InstagramPreview({ image, caption, location }: { image: string; caption
   );
 }
 
-function FacebookPreview({ image, caption, cta, link }: { image: string; caption: string; cta: string; link: string }) {
+function FacebookPreview({ image, caption, cta, link, format, mediaUrls, videoUrl }: { image: string; caption: string; cta: string; link: string; format: Format; mediaUrls?: string[]; videoUrl?: string }) {
   return (
     <Card className="overflow-hidden">
       <div className="flex items-center justify-between p-3">
@@ -527,7 +645,7 @@ function FacebookPreview({ image, caption, cta, link }: { image: string; caption
         <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
       </div>
       <p className="px-3 pb-3 text-sm whitespace-pre-line line-clamp-4 leading-snug">{caption}</p>
-      <img src={image} alt="" className="w-full aspect-square object-cover" />
+      <MediaBlock image={image} format={format} mediaUrls={mediaUrls} videoUrl={videoUrl} />
       {(cta && cta !== "None") && (
         <div className="px-3 py-2 flex items-center justify-between border-t border-border bg-secondary/40">
           <div className="min-w-0">

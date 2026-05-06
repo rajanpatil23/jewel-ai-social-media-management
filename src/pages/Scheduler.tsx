@@ -67,7 +67,9 @@ export default function Scheduler() {
 
   const [year, setYear] = useState(2026);
   const [month, setMonth] = useState(4); // May
-  const [view, setView] = useState<"month" | "week" | "list">("month");
+  const [view, setView] = useState<"month" | "week" | "list">(
+    typeof window !== "undefined" && window.innerWidth < 768 ? "list" : "month"
+  );
   const [weekAnchor, setWeekAnchor] = useState<Date>(() => {
     const d = new Date(2026, 4, 4); // start of week containing May 2026
     d.setDate(d.getDate() - d.getDay());
@@ -180,9 +182,9 @@ export default function Scheduler() {
 
           <Tabs value={view} onValueChange={(v) => setView(v as typeof view)} className="ml-auto">
             <TabsList className="h-9">
-              <TabsTrigger value="month" className="text-xs px-3">Month</TabsTrigger>
-              <TabsTrigger value="week" className="text-xs px-3">Week</TabsTrigger>
-              <TabsTrigger value="list" className="text-xs px-3">List</TabsTrigger>
+              <TabsTrigger value="month" className="text-xs px-2.5 sm:px-3">Month</TabsTrigger>
+              <TabsTrigger value="week" className="text-xs px-2.5 sm:px-3">Week</TabsTrigger>
+              <TabsTrigger value="list" className="text-xs px-2.5 sm:px-3">List</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -217,7 +219,7 @@ export default function Scheduler() {
           </DropdownMenu>
 
           <Button size="sm" className="h-9 gap-1.5" onClick={() => navigate("/post")}>
-            <Plus className="h-3.5 w-3.5" /> New post
+            <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">New post</span>
           </Button>
         </div>
 

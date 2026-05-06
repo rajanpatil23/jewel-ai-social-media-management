@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -13,12 +13,14 @@ import {
   Plug,
   PenSquare,
   LogOut,
+  Menu,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth";
 import advoraLogo from "@/assets/advora-logo.png";
 
@@ -31,6 +33,15 @@ const nav = [
   { to: "/connections", label: "Connections", icon: Plug },
 ];
 
+// Bottom tab bar — keep to 5 most-used items so it stays one-thumb friendly
+const mobileTabs = [
+  { to: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { to: "/", label: "Studio", icon: Sparkles },
+  { to: "/post", label: "Post", icon: PenSquare, primary: true },
+  { to: "/schedule", label: "Schedule", icon: CalendarDays },
+  { to: "/analytics", label: "Stats", icon: BarChart3 },
+];
+
 const sectionTitle: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/": "AI Studio",
@@ -40,10 +51,41 @@ const sectionTitle: Record<string, string> = {
   "/connections": "Connections",
 };
 
+function NavItems({ pathname, onPick }: { pathname: string; onPick?: () => void }) {
+  return (
+    <nav className="flex flex-col gap-0.5">
+      {nav.map((item) => {
+        const active =
+          item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+        return (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            onClick={onPick}
+            className={`group flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors ${
+              active
+                ? "bg-secondary text-foreground font-medium"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            }`}
+          >
+            <item.icon
+              className={`h-4 w-4 ${
+                active ? "text-[hsl(var(--primary-deep))]" : "text-muted-foreground/80"
+              }`}
+            />
+            <span>{item.label}</span>
+          </NavLink>
+        );
+      })}
+    </nav>
+  );
+}
+
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const { user, logout, previewMode } = useAuth();
   const navigate = useNavigate();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const initials = (user?.name || user?.email || "U")
     .split(/\s+/).map((s) => s[0]).slice(0, 2).join("").toUpperCase();
   const currentLabel =
@@ -53,7 +95,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex bg-muted/30 text-foreground">
-      {/* Sidebar */}
+      {/* Desktop sidebar */}
       <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-card">
         <div className="h-14 flex items-center gap-2.5 px-4 border-b border-border">
           <img src={advoraLogo} alt="Advora" className="h-7 w-7 object-contain" />
@@ -67,30 +109,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <p className="px-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80 mb-1.5">
             Workspace
           </p>
-          <nav className="flex flex-col gap-0.5">
-            {nav.map((item) => {
-              const active =
-                item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={`group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
-                    active
-                      ? "bg-secondary text-foreground font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
-                  }`}
-                >
-                  <item.icon
-                    className={`h-4 w-4 ${
-                      active ? "text-[hsl(var(--primary-deep))]" : "text-muted-foreground/80"
-                    }`}
-                  />
-                  <span>{item.label}</span>
-                </NavLink>
-              );
-            })}
-          </nav>
+          <NavItems pathname={pathname} />
         </div>
 
         <div className="px-3 pt-5">
@@ -124,24 +143,72 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
         <header className="sticky top-0 z-30 h-14 border-b border-border bg-card/95 backdrop-blur">
-          <div className="h-full px-4 md:px-6 flex items-center gap-4">
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground min-w-0">
+          <div className="h-full px-3 md:px-6 flex items-center gap-2 md:gap-4">
+            {/* Mobile menu trigger */}
+            <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+              <SheetTrigger asChild>
+                <button
+                  className="md:hidden h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  aria-label="Open menu"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-0">
+                <div className="h-14 flex items-center gap-2.5 px-4 border-b border-border">
+                  <img src={advoraLogo} alt="Advora" className="h-7 w-7 object-contain" />
+                  <div className="leading-tight">
+                    <div className="font-display text-[15px] tracking-tight">Advora</div>
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Workspace</div>
+                  </div>
+                </div>
+                <div className="px-3 pt-4">
+                  <p className="px-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80 mb-1.5">
+                    Workspace
+                  </p>
+                  <NavItems pathname={pathname} onPick={() => setDrawerOpen(false)} />
+
+                  <p className="px-2 mt-5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80 mb-1.5">
+                    Account
+                  </p>
+                  <button
+                    onClick={async () => { setDrawerOpen(false); await logout(); navigate("/login"); }}
+                    className="w-full flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" /> Sign out
+                  </button>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            {/* Mobile compact brand */}
+            <div className="md:hidden flex items-center gap-2 min-w-0">
+              <img src={advoraLogo} alt="Advora" className="h-6 w-6 object-contain" />
+              <span className="text-sm font-medium truncate">{currentLabel}</span>
+            </div>
+
+            {/* Desktop breadcrumb */}
+            <div className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground min-w-0">
               <span className="hidden sm:inline">Maison Aurelia</span>
               <ChevronRight className="hidden sm:inline h-3.5 w-3.5" />
               <span className="text-foreground font-medium truncate">{currentLabel}</span>
             </div>
-            <div className="ml-auto flex items-center gap-2">
-              <div className="relative hidden md:block">
+
+            <div className="ml-auto flex items-center gap-1.5 md:gap-2">
+              <div className="relative hidden lg:block">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   placeholder="Search posts, assets, analytics…"
                   className="h-9 w-72 pl-8 bg-background"
                 />
               </div>
-              <button className="h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+              <button
+                aria-label="Notifications"
+                className="h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
                 <Bell className="h-4 w-4" />
               </button>
-              <div className="h-6 w-px bg-border mx-1" />
+              <div className="hidden md:block h-6 w-px bg-border mx-1" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 rounded-md p-0.5 hover:bg-secondary transition-colors">
@@ -170,9 +237,40 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 w-full px-4 md:px-6 lg:px-8 py-6 md:py-8 bg-muted/30">
+        <main className="flex-1 w-full px-4 md:px-6 lg:px-8 py-5 md:py-8 pb-24 md:pb-8 bg-muted/30">
           <div className="mx-auto w-full max-w-[1500px]">{children}</div>
         </main>
+
+        {/* Mobile bottom tab bar */}
+        <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-border bg-card/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
+          <ul className="grid grid-cols-5">
+            {mobileTabs.map((t) => {
+              const active = t.to === "/" ? pathname === "/" : pathname.startsWith(t.to);
+              const Icon = t.icon;
+              return (
+                <li key={t.to}>
+                  <NavLink
+                    to={t.to}
+                    className={`flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium ${
+                      active ? "text-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    {t.primary ? (
+                      <span className={`mb-0.5 inline-flex h-9 w-9 items-center justify-center rounded-full ${
+                        active ? "bg-[hsl(var(--primary))] text-primary-foreground" : "bg-secondary text-foreground"
+                      } shadow-sm`}>
+                        <Icon className="h-4 w-4" />
+                      </span>
+                    ) : (
+                      <Icon className={`h-5 w-5 ${active ? "text-[hsl(var(--primary-deep))]" : ""}`} />
+                    )}
+                    <span>{t.label}</span>
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
       </div>
     </div>
   );

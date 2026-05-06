@@ -190,7 +190,7 @@ export default function PostMeta() {
   return (
     <AppLayout>
       {/* Sticky action bar */}
-      <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-6 px-6 py-3 bg-background/90 backdrop-blur border-b border-border">
+      <div className="sticky top-0 z-20 -mx-4 md:-mx-6 -mt-6 md:-mt-8 mb-6 px-4 md:px-6 py-3 bg-background/90 backdrop-blur border-b border-border">
         <div className="mx-auto max-w-[1400px] flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="min-w-0">

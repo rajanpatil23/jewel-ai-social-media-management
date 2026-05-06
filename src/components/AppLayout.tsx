@@ -51,7 +51,7 @@ const sectionTitle: Record<string, string> = {
   "/connections": "Connections",
 };
 
-function NavItems({ pathname, onPick }: { pathname: string; onPick?: () => void }) {
+function NavItems({ pathname, collapsed, onPick }: { pathname: string; collapsed?: boolean; onPick?: () => void }) {
   return (
     <nav className="flex flex-col gap-0.5">
       {nav.map((item) => {
@@ -62,18 +62,21 @@ function NavItems({ pathname, onPick }: { pathname: string; onPick?: () => void 
             key={item.to}
             to={item.to}
             onClick={onPick}
-            className={`group flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors ${
+            title={collapsed ? item.label : undefined}
+            className={`group flex items-center gap-2.5 rounded-md ${
+              collapsed ? "justify-center px-0 py-2" : "px-2.5 py-2"
+            } text-sm transition-colors ${
               active
                 ? "bg-secondary text-foreground font-medium"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
             }`}
           >
             <item.icon
-              className={`h-4 w-4 ${
+              className={`h-4 w-4 shrink-0 ${
                 active ? "text-[hsl(var(--primary-deep))]" : "text-muted-foreground/80"
               }`}
             />
-            <span>{item.label}</span>
+            {!collapsed && <span className="truncate">{item.label}</span>}
           </NavLink>
         );
       })}
@@ -86,6 +89,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout, previewMode } = useAuth();
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("advora.sidebar.collapsed") === "1";
+  });
+  const toggleSidebar = () => {
+    setSidebarCollapsed((v) => {
+      const nv = !v;
+      try { localStorage.setItem("advora.sidebar.collapsed", nv ? "1" : "0"); } catch {}
+      return nv;
+    });
+  };
   const initials = (user?.name || user?.email || "U")
     .split(/\s+/).map((s) => s[0]).slice(0, 2).join("").toUpperCase();
   const currentLabel =
@@ -96,47 +110,59 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex bg-muted/30 text-foreground">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-card">
-        <div className="h-14 flex items-center gap-2.5 px-4 border-b border-border">
-          <img src={advoraLogo} alt="Advora" className="h-7 w-7 object-contain" />
-          <div className="leading-tight">
-            <div className="font-display text-[15px] tracking-tight">Advora</div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Workspace</div>
+      <aside
+        className={`hidden md:flex shrink-0 flex-col border-r border-border bg-card transition-[width] duration-200 ${
+          sidebarCollapsed ? "w-14" : "w-60"
+        }`}
+      >
+        <div className={`h-14 flex items-center border-b border-border ${sidebarCollapsed ? "justify-center px-0" : "gap-2.5 px-4"}`}>
+          <img src={advoraLogo} alt="Advora" className="h-7 w-7 object-contain shrink-0" />
+          {!sidebarCollapsed && (
+            <div className="leading-tight min-w-0">
+              <div className="font-display text-[15px] tracking-tight truncate">Advora</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground truncate">Workspace</div>
+            </div>
+          )}
+        </div>
+
+        <div className={`pt-4 pb-2 ${sidebarCollapsed ? "px-2" : "px-3"}`}>
+          {!sidebarCollapsed && (
+            <p className="px-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80 mb-1.5">
+              Workspace
+            </p>
+          )}
+          <NavItems pathname={pathname} collapsed={sidebarCollapsed} />
+        </div>
+
+        {!sidebarCollapsed && (
+          <div className="px-3 pt-5">
+            <p className="px-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80 mb-1.5">
+              Account
+            </p>
+            <nav className="flex flex-col gap-0.5">
+              <button className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                <Settings className="h-4 w-4" />
+                Settings
+              </button>
+              <button className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                <HelpCircle className="h-4 w-4" />
+                Help & docs
+              </button>
+            </nav>
           </div>
-        </div>
+        )}
 
-        <div className="px-3 pt-4 pb-2">
-          <p className="px-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80 mb-1.5">
-            Workspace
-          </p>
-          <NavItems pathname={pathname} />
-        </div>
-
-        <div className="px-3 pt-5">
-          <p className="px-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80 mb-1.5">
-            Account
-          </p>
-          <nav className="flex flex-col gap-0.5">
-            <button className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-              <Settings className="h-4 w-4" />
-              Settings
-            </button>
-            <button className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-              <HelpCircle className="h-4 w-4" />
-              Help & docs
-            </button>
-          </nav>
-        </div>
-
-        <div className="mt-auto p-3">
-          <div className="rounded-lg border border-border bg-secondary/40 p-3">
-            <p className="text-xs font-medium">Pro plan</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">1,240 AI credits left</p>
-            <div className="mt-2 h-1 rounded-full bg-border overflow-hidden">
-              <div className="h-full w-3/4 bg-[hsl(var(--primary))]" />
+        {!sidebarCollapsed && (
+          <div className="mt-auto p-3">
+            <div className="rounded-lg border border-border bg-secondary/40 p-3">
+              <p className="text-xs font-medium">Pro plan</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">1,240 AI credits left</p>
+              <div className="mt-2 h-1 rounded-full bg-border overflow-hidden">
+                <div className="h-full w-3/4 bg-[hsl(var(--primary))]" />
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </aside>
 
       {/* Main */}
@@ -180,6 +206,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </div>
               </SheetContent>
             </Sheet>
+
+            {/* Desktop sidebar toggle */}
+            <button
+              onClick={toggleSidebar}
+              className="hidden md:inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary"
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <Menu className="h-5 w-5" />
+            </button>
 
             {/* Mobile compact brand */}
             <div className="md:hidden flex items-center gap-2 min-w-0">

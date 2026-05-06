@@ -245,7 +245,7 @@ export default function ImageGen() {
 
           {/* GENERATE TAB — Firefly-style layout */}
           <TabsContent value="generate" className="mt-6">
-            <div className="grid lg:grid-cols-[320px_1fr] gap-6 items-start h-[calc(100vh-200px)]">
+            <div className="grid lg:grid-cols-[320px_1fr] gap-6 items-stretch min-h-[calc(100vh-180px)]">
               {/* LEFT: Settings panel — scrollable */}
               <Card className="rounded-2xl border-border/70 bg-card h-full overflow-y-auto">
                 {/* General settings */}

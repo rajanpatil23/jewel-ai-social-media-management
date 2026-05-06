@@ -205,14 +205,8 @@ export default function ImageGen() {
               Describe your jewelry piece and let AI craft scroll-stopping creatives.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs font-normal">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-2" /> Nano Banana Pro
-            </Badge>
-            <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs font-normal">
-              1,240 credits
-            </Badge>
-          </div>
+          <div className="flex items-center gap-2" />
+
         </div>
 
         {/* Preset templates */}

@@ -161,7 +161,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     )}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={async () => { await logout(); nav("/login"); }}>
+                  <DropdownMenuItem onClick={async () => { await logout(); navigate("/login"); }}>
                     <LogOut className="h-4 w-4 mr-2" /> Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>

@@ -147,7 +147,7 @@ export default function Scheduler() {
           </div>
 
           <h2 className="font-display text-xl md:text-2xl font-semibold ml-1">
-            {monthName[month]} <span className="text-muted-foreground font-normal">{year}</span>
+            {view === "week" ? weekRangeLabel : <>{monthName[month]} <span className="text-muted-foreground font-normal">{year}</span></>}
           </h2>
 
           <Tabs value={view} onValueChange={(v) => setView(v as typeof view)} className="ml-auto">

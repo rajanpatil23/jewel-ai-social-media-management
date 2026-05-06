@@ -219,7 +219,7 @@ export default function Scheduler() {
           </DropdownMenu>
 
           <Button size="sm" className="h-9 gap-1.5" onClick={() => navigate("/post")}>
-            <Plus className="h-3.5 w-3.5" /> New post
+            <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">New post</span>
           </Button>
         </div>
 

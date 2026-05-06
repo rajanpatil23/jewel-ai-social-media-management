@@ -139,16 +139,15 @@ export default function PostMeta() {
           {/* LEFT: form (single column, progressive) */}
           <div className="space-y-5">
             {/* 1. Media */}
-            <SectionCard step={1} title="Media" subtitle="Upload an image or video. You can replace it anytime.">
+            <SectionCard step={1} title="Media" subtitle="Pick from your AI-generated gallery, upload, or generate something new.">
               <div className="grid sm:grid-cols-[200px_1fr] gap-4">
                 <div className="relative rounded-lg overflow-hidden border border-border bg-secondary aspect-square group">
                   <img src={image} alt="Post media" className="w-full h-full object-cover" />
-                  <label className="absolute inset-0 flex items-center justify-center bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <button onClick={() => setPickerOpen(true)} className="absolute inset-0 flex items-center justify-center bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-background border border-border text-xs font-medium">
-                      <ImagePlus className="h-3.5 w-3.5" /> Replace
+                      <Images className="h-3.5 w-3.5" /> Change
                     </span>
-                    <input type="file" accept="image/*,video/*" className="hidden" onChange={onUpload} />
-                  </label>
+                  </button>
                 </div>
                 <div className="space-y-3">
                   <div>
@@ -169,12 +168,37 @@ export default function PostMeta() {
                       })}
                     </div>
                   </div>
-                  <label className="inline-flex w-full items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer border border-dashed border-border rounded-md py-2.5 transition-colors">
-                    <ImagePlus className="h-3.5 w-3.5" /> Or upload from device
-                    <input type="file" accept="image/*,video/*" className="hidden" onChange={onUpload} />
-                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} className="gap-1.5 text-xs">
+                      <Images className="h-3.5 w-3.5" /> Gallery
+                    </Button>
+                    <label className="inline-flex items-center justify-center gap-1.5 text-xs cursor-pointer border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md h-9 px-3 font-medium">
+                      <ImagePlus className="h-3.5 w-3.5" /> Upload
+                      <input type="file" accept="image/*,video/*" className="hidden" onChange={onUpload} />
+                    </label>
+                    <Button variant="outline" size="sm" onClick={() => navigate("/studio")} className="gap-1.5 text-xs">
+                      <Sparkles className="h-3.5 w-3.5" /> Generate
+                    </Button>
+                  </div>
                 </div>
               </div>
+
+              <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+                <DialogContent className="max-w-3xl">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><Images className="h-4 w-4" /> Pick from gallery</DialogTitle>
+                  </DialogHeader>
+                  <GalleryPicker
+                    items={[
+                      ...gallery.map((g) => ({ src: g.src, label: g.label })),
+                      ...Object.entries(productImages).filter(([k]) => k !== "ad").map(([k, src]) => ({ src: src as string, label: k })),
+                    ]}
+                    selected={image}
+                    onPick={(src) => { setImage(src); setPickerOpen(false); toast.success("Image selected"); }}
+                    onGenerate={() => { setPickerOpen(false); navigate("/studio"); }}
+                  />
+                </DialogContent>
+              </Dialog>
             </SectionCard>
 
             {/* 2. Platforms */}

@@ -37,11 +37,14 @@ $routes = [
     '#^/upload$#'                          => 'routes/upload.php:upload',
 
     '#^/connections$#'                     => 'routes/connections.php:index',
-    '#^/connections/meta/connect$#'        => 'routes/connections.php:meta_connect',
+    '#^/connections/meta/connect$#'        => 'routes/connections.php:meta_start',
+    '#^/connections/meta/callback$#'       => 'routes/connections.php:meta_callback',
     '#^/connections/meta/disconnect$#'     => 'routes/connections.php:meta_disconnect',
 
     '#^/posts$#'                           => 'routes/posts.php:index',
     '#^/posts/(?P<id>[a-f0-9-]{36})$#'     => 'routes/posts.php:item',
+
+    '#^/analytics/summary$#'               => 'routes/analytics.php:summary',
 
     '#^/ai/generate$#'                     => 'routes/ai.php:generate',
 

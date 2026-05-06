@@ -1,0 +1,136 @@
+<?php
+// Meta Graph helpers — OAuth + publish + insights.
+// Docs: https://developers.facebook.com/docs/instagram-api/guides/content-publishing
+//       https://developers.facebook.com/docs/pages/publishing/
+// Requires App Review for production: pages_manage_posts, pages_read_engagement,
+// pages_show_list, instagram_basic, instagram_content_publish, instagram_manage_insights.
+
+const META_GRAPH = 'https://graph.facebook.com/v19.0';
+
+function meta_http(string $method, string $url, array $params = [], ?string $body = null): array {
+    if ($method === 'GET' && $params) {
+        $url .= (strpos($url,'?')===false?'?':'&') . http_build_query($params);
+    }
+    $ch = curl_init($url);
+    $opts = [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 60,
+        CURLOPT_CUSTOMREQUEST  => $method,
+    ];
+    if ($method !== 'GET') {
+        $opts[CURLOPT_POSTFIELDS] = $body !== null ? $body : http_build_query($params);
+        $opts[CURLOPT_HTTPHEADER] = ['Content-Type: application/x-www-form-urlencoded'];
+    }
+    curl_setopt_array($ch, $opts);
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $data = json_decode($resp, true) ?: [];
+    if ($code >= 400) {
+        $msg = $data['error']['message'] ?? "graph_$code";
+        throw new RuntimeException($msg);
+    }
+    return $data;
+}
+
+// Step 1: build OAuth URL the browser is sent to
+function meta_oauth_url(string $state): string {
+    $c = cfg();
+    $scopes = implode(',', [
+        'public_profile','email',
+        'pages_show_list','pages_manage_posts','pages_read_engagement',
+        'instagram_basic','instagram_content_publish','instagram_manage_insights',
+        'business_management',
+    ]);
+    return 'https://www.facebook.com/v19.0/dialog/oauth?' . http_build_query([
+        'client_id'     => $c['meta_app_id'],
+        'redirect_uri'  => $c['meta_redirect_uri'],
+        'response_type' => 'code',
+        'scope'         => $scopes,
+        'state'         => $state,
+    ]);
+}
+
+// Step 2: exchange code → short-lived → long-lived (60-day) token
+function meta_exchange_code(string $code): array {
+    $c = cfg();
+    $short = meta_http('GET', META_GRAPH . '/oauth/access_token', [
+        'client_id'     => $c['meta_app_id'],
+        'client_secret' => $c['meta_app_secret'],
+        'redirect_uri'  => $c['meta_redirect_uri'],
+        'code'          => $code,
+    ]);
+    $long = meta_http('GET', META_GRAPH . '/oauth/access_token', [
+        'grant_type'        => 'fb_exchange_token',
+        'client_id'         => $c['meta_app_id'],
+        'client_secret'     => $c['meta_app_secret'],
+        'fb_exchange_token' => $short['access_token'],
+    ]);
+    return $long; // ['access_token' => ..., 'expires_in' => seconds]
+}
+
+// Pull pages + linked IG accounts. Page tokens never expire as long as user token is valid.
+function meta_fetch_assets(string $userToken): array {
+    $me   = meta_http('GET', META_GRAPH . '/me', ['fields' => 'id,name', 'access_token' => $userToken]);
+    $pages= meta_http('GET', META_GRAPH . '/me/accounts',
+            ['fields' => 'id,name,access_token,instagram_business_account{id,username}', 'access_token' => $userToken]);
+    return ['user' => $me, 'pages' => $pages['data'] ?? []];
+}
+
+// Publish a Facebook Page photo (or text-only feed post)
+function meta_publish_facebook(string $pageId, string $pageToken, ?string $imageUrl, string $caption): string {
+    if ($imageUrl) {
+        $r = meta_http('POST', META_GRAPH . "/$pageId/photos", [
+            'url' => $imageUrl, 'caption' => $caption, 'access_token' => $pageToken,
+        ]);
+        return $r['post_id'] ?? ($r['id'] ?? '');
+    }
+    $r = meta_http('POST', META_GRAPH . "/$pageId/feed", [
+        'message' => $caption, 'access_token' => $pageToken,
+    ]);
+    return $r['id'] ?? '';
+}
+
+// Publish to Instagram (2-step). $imageUrl must be public HTTPS.
+function meta_publish_instagram(string $igUserId, string $pageToken, string $imageUrl, string $caption): string {
+    $container = meta_http('POST', META_GRAPH . "/$igUserId/media", [
+        'image_url'    => $imageUrl,
+        'caption'      => $caption,
+        'access_token' => $pageToken,
+    ]);
+    $cid = $container['id'] ?? null;
+    if (!$cid) throw new RuntimeException('ig_container_failed');
+    $pub = meta_http('POST', META_GRAPH . "/$igUserId/media_publish", [
+        'creation_id'  => $cid,
+        'access_token' => $pageToken,
+    ]);
+    return $pub['id'] ?? '';
+}
+
+// Aggregate Page + IG insights for last N days
+function meta_insights(string $pageId, string $pageToken, ?string $igUserId, int $days = 28): array {
+    $since = strtotime("-$days days");
+    $until = time();
+
+    $page = meta_http('GET', META_GRAPH . "/$pageId/insights", [
+        'metric'       => 'page_impressions,page_post_engagements,page_fans',
+        'period'       => 'day',
+        'since'        => $since,
+        'until'        => $until,
+        'access_token' => $pageToken,
+    ]);
+
+    $ig = null;
+    if ($igUserId) {
+        try {
+            $ig = meta_http('GET', META_GRAPH . "/$igUserId/insights", [
+                'metric'       => 'reach,impressions,profile_views',
+                'period'       => 'day',
+                'since'        => $since,
+                'until'        => $until,
+                'access_token' => $pageToken,
+            ]);
+        } catch (Throwable $e) { /* IG insights not available unless business */ }
+    }
+    return ['page' => $page, 'ig' => $ig];
+}

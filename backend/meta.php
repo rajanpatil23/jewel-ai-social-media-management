@@ -91,7 +91,7 @@ function meta_publish_facebook(string $pageId, string $pageToken, ?string $image
     return $r['id'] ?? '';
 }
 
-// Publish to Instagram (2-step). $imageUrl must be public HTTPS.
+// Publish single image to Instagram (2-step). $imageUrl must be public HTTPS.
 function meta_publish_instagram(string $igUserId, string $pageToken, string $imageUrl, string $caption): string {
     $container = meta_http('POST', META_GRAPH . "/$igUserId/media", [
         'image_url'    => $imageUrl,
@@ -100,11 +100,92 @@ function meta_publish_instagram(string $igUserId, string $pageToken, string $ima
     ]);
     $cid = $container['id'] ?? null;
     if (!$cid) throw new RuntimeException('ig_container_failed');
+    return meta_publish_container($igUserId, $pageToken, $cid);
+}
+
+function meta_publish_container(string $igUserId, string $pageToken, string $creationId): string {
+    // Poll status until FINISHED (esp. for reels/carousels)
+    for ($i = 0; $i < 20; $i++) {
+        try {
+            $st = meta_http('GET', META_GRAPH . "/$creationId", [
+                'fields' => 'status_code', 'access_token' => $pageToken,
+            ]);
+            if (($st['status_code'] ?? '') === 'FINISHED') break;
+            if (($st['status_code'] ?? '') === 'ERROR') throw new RuntimeException('ig_container_error');
+        } catch (Throwable $e) { /* keep polling */ }
+        sleep(3);
+    }
     $pub = meta_http('POST', META_GRAPH . "/$igUserId/media_publish", [
-        'creation_id'  => $cid,
+        'creation_id'  => $creationId,
         'access_token' => $pageToken,
     ]);
     return $pub['id'] ?? '';
+}
+
+// Publish carousel (2-10 images) to Instagram
+function meta_publish_instagram_carousel(string $igUserId, string $pageToken, array $imageUrls, string $caption): string {
+    $children = [];
+    foreach ($imageUrls as $url) {
+        $c = meta_http('POST', META_GRAPH . "/$igUserId/media", [
+            'image_url'        => $url,
+            'is_carousel_item' => 'true',
+            'access_token'     => $pageToken,
+        ]);
+        if (empty($c['id'])) throw new RuntimeException('ig_carousel_child_failed');
+        $children[] = $c['id'];
+    }
+    $container = meta_http('POST', META_GRAPH . "/$igUserId/media", [
+        'media_type'   => 'CAROUSEL',
+        'children'     => implode(',', $children),
+        'caption'      => $caption,
+        'access_token' => $pageToken,
+    ]);
+    $cid = $container['id'] ?? null;
+    if (!$cid) throw new RuntimeException('ig_carousel_container_failed');
+    return meta_publish_container($igUserId, $pageToken, $cid);
+}
+
+// Publish a Reel (video) to Instagram. $videoUrl must be public HTTPS MP4.
+function meta_publish_instagram_reel(string $igUserId, string $pageToken, string $videoUrl, string $caption, bool $shareToFeed = true): string {
+    $container = meta_http('POST', META_GRAPH . "/$igUserId/media", [
+        'media_type'    => 'REELS',
+        'video_url'     => $videoUrl,
+        'caption'       => $caption,
+        'share_to_feed' => $shareToFeed ? 'true' : 'false',
+        'access_token'  => $pageToken,
+    ]);
+    $cid = $container['id'] ?? null;
+    if (!$cid) throw new RuntimeException('ig_reel_container_failed');
+    return meta_publish_container($igUserId, $pageToken, $cid);
+}
+
+// Publish a video to a Facebook Page
+function meta_publish_facebook_video(string $pageId, string $pageToken, string $videoUrl, string $caption): string {
+    $r = meta_http('POST', META_GRAPH . "/$pageId/videos", [
+        'file_url'     => $videoUrl,
+        'description'  => $caption,
+        'access_token' => $pageToken,
+    ]);
+    return $r['id'] ?? '';
+}
+
+// Publish carousel to Facebook (multi-photo post)
+function meta_publish_facebook_carousel(string $pageId, string $pageToken, array $imageUrls, string $caption): string {
+    $mediaIds = [];
+    foreach ($imageUrls as $url) {
+        $u = meta_http('POST', META_GRAPH . "/$pageId/photos", [
+            'url' => $url, 'published' => 'false', 'access_token' => $pageToken,
+        ]);
+        if (!empty($u['id'])) $mediaIds[] = $u['id'];
+    }
+    $attached = [];
+    foreach ($mediaIds as $mid) $attached[] = ['media_fbid' => $mid];
+    $r = meta_http('POST', META_GRAPH . "/$pageId/feed", [
+        'message'           => $caption,
+        'attached_media'    => json_encode($attached),
+        'access_token'      => $pageToken,
+    ]);
+    return $r['id'] ?? '';
 }
 
 // Aggregate Page + IG insights for last N days

@@ -10,13 +10,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Instagram, Facebook, Loader2, CheckCircle2, ImagePlus, Send, Calendar as CalendarIcon,
   Heart, MessageCircle, Send as SendIcon, Bookmark, MoreHorizontal, ThumbsUp, Share2,
   Globe2, Hash, BadgeCheck, MapPin, Users, LayoutGrid, Film, Image as ImageIcon, Square, Link as LinkIcon,
-  Sparkles, ChevronRight,
+  Sparkles, ChevronRight, Images,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useGallery } from "@/lib/gallery";
+import { productImages } from "@/lib/mockData";
 import hero from "@/assets/hero-jewelry.jpg";
 
 const IG_LIMIT = 2200;

@@ -48,6 +48,9 @@ $routes = [
 
     '#^/ai/generate$#'                     => 'routes/ai.php:generate',
 
+    '#^/meta/data-deletion$#'              => 'routes/meta_deletion.php:meta_data_deletion',
+    '#^/meta/data-deletion/status$#'       => 'routes/meta_deletion.php:meta_data_deletion_status',
+
     '#^/health$#'                          => 'routes/health.php:ping',
 ];
 

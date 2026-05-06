@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/collapsible";
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
+import { addToGallery } from "@/lib/gallery";
 
 import ring from "@/assets/product-ring.jpg";
 import necklace from "@/assets/product-necklace.jpg";

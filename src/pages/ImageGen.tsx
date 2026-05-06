@@ -347,7 +347,7 @@ export default function ImageGen() {
               </Card>
 
               {/* RIGHT: Canvas area — static, no scroll */}
-              <div className="flex flex-col min-w-0 h-full overflow-hidden">
+              <div className="flex flex-col min-w-0 h-full">
                 <div className="flex-1 flex items-center justify-center">
                   {!loading && results.length === 0 ? (
                     <div className="text-center max-w-md mx-auto px-6 py-12">

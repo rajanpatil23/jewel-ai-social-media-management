@@ -461,6 +461,76 @@ export default function ImageGen() {
               </div>
             </div>
 
+            {/* Collections + History as bottom secondary tabs */}
+            <div className="mt-8">
+              <Tabs defaultValue="collections">
+                <TabsList className="bg-secondary/60 rounded-lg">
+                  <TabsTrigger value="collections" className="text-xs gap-1.5">
+                    <FolderHeart className="h-3.5 w-3.5" /> Collections
+                    {collections.length > 0 && (
+                      <span className="ml-1 px-1.5 rounded-full bg-[hsl(var(--primary))] text-primary-foreground text-[10px] leading-4">
+                        {collections.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="text-xs gap-1.5">
+                    <History className="h-3.5 w-3.5" /> History
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="collections" className="mt-5">
+                  {collections.length === 0 ? (
+                    <Card className="rounded-2xl border-dashed border-border/70 bg-card p-10 text-center">
+                      <FolderHeart className="h-8 w-8 mx-auto text-muted-foreground/60 mb-3" />
+                      <h3 className="font-medium text-sm">Your collection is empty</h3>
+                      <p className="text-xs text-muted-foreground mt-1">Tap the heart on any creative to save it here.</p>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {collections.map((item, i) => (
+                        <Card key={i} className="group relative overflow-hidden rounded-xl border-border/70 bg-card">
+                          <img src={item.src} alt={item.label} className="aspect-square w-full object-cover" />
+                          <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/85 via-black/30 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                            <p className="text-[11px] line-clamp-1 mb-2">{item.label}</p>
+                            <div className="flex gap-1.5">
+                              <Button size="sm" variant="gold" className="rounded-md h-7 px-2.5 text-xs flex-1" onClick={() => useForPost(item.src)}>
+                                <Send className="h-3 w-3 mr-1" /> Publish
+                              </Button>
+                              <Button size="sm" variant="secondary" className="rounded-md h-7 px-2 text-xs" onClick={() => toggleSave(item)}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="history" className="mt-5">
+                  <Card className="rounded-2xl border-border/70 bg-card p-4">
+                    {history.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-6">No generations yet.</p>
+                    ) : (
+                      <ul className="divide-y divide-border/60">
+                        {history.map((h, i) => (
+                          <li key={i} className="flex items-center gap-3 py-2.5">
+                            <img src={h.src} alt="" className="h-12 w-12 rounded-md object-cover border border-border/70 shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm line-clamp-1">{h.prompt}</p>
+                              <p className="text-[11px] text-muted-foreground">Just now</p>
+                            </div>
+                            <Button size="sm" variant="outline" className="h-7 text-xs rounded-md" onClick={() => setPrompt(h.prompt)}>
+                              Re-use
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </div>
           </TabsContent>
 
           {/* GALLERY TAB */}

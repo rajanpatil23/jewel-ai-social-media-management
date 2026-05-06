@@ -230,12 +230,25 @@ export default function PostMeta() {
             <SectionCard step={1} title="Media" subtitle="Pick from your AI-generated gallery, upload, or generate something new.">
               <div className="grid sm:grid-cols-[200px_1fr] gap-4">
                 <div className="relative rounded-lg overflow-hidden border border-border bg-secondary aspect-square group">
-                  <img src={image} alt="Post media" className="w-full h-full object-cover" />
-                  <button onClick={() => setPickerOpen(true)} className="absolute inset-0 flex items-center justify-center bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-background border border-border text-xs font-medium">
-                      <Images className="h-3.5 w-3.5" /> Change
-                    </span>
-                  </button>
+                  {isReel ? (
+                    videoUrl ? (
+                      <video src={videoUrl} controls className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-1.5">
+                        <Film className="h-7 w-7" />
+                        <span className="text-[11px]">Upload a video</span>
+                      </div>
+                    )
+                  ) : (
+                    <>
+                      <img src={image} alt="Post media" className="w-full h-full object-cover" />
+                      <button onClick={() => setPickerOpen(true)} className="absolute inset-0 flex items-center justify-center bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-background border border-border text-xs font-medium">
+                          <Images className="h-3.5 w-3.5" /> Change
+                        </span>
+                      </button>
+                    </>
+                  )}
                 </div>
                 <div className="space-y-3">
                   <div>
@@ -257,24 +270,52 @@ export default function PostMeta() {
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} className="gap-1.5 text-xs">
+                    <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} disabled={isReel} className="gap-1.5 text-xs">
                       <Images className="h-3.5 w-3.5" /> Gallery
                     </Button>
                     <label className="inline-flex items-center justify-center gap-1.5 text-xs cursor-pointer border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md h-9 px-3 font-medium">
-                      <ImagePlus className="h-3.5 w-3.5" /> Upload
-                      <input type="file" accept="image/*,video/*" className="hidden" onChange={onUpload} />
+                      <ImagePlus className="h-3.5 w-3.5" />
+                      {isReel ? "Upload video" : isCarousel ? "Add images" : "Upload"}
+                      <input
+                        type="file"
+                        accept={isReel ? "video/mp4,video/quicktime" : "image/*"}
+                        multiple={isCarousel}
+                        className="hidden"
+                        onChange={onUpload}
+                      />
                     </label>
                     <Button variant="outline" size="sm" onClick={() => navigate("/studio")} className="gap-1.5 text-xs">
                       <Sparkles className="h-3.5 w-3.5" /> Generate
                     </Button>
                   </div>
+                  {isCarousel && (
+                    <p className="text-[11px] text-muted-foreground">{mediaUrls.length}/10 slides · need at least 2</p>
+                  )}
+                  {isReel && (
+                    <p className="text-[11px] text-muted-foreground">MP4, 9:16 vertical recommended. Max 60s for Reels.</p>
+                  )}
                 </div>
               </div>
+
+              {isCarousel && mediaUrls.length > 0 && (
+                <div className="mt-4 grid grid-cols-5 gap-2">
+                  {mediaUrls.map((src, i) => (
+                    <div key={`${src}-${i}`} className="relative aspect-square rounded-md overflow-hidden border border-border group">
+                      <img src={src} alt="" className="w-full h-full object-cover" />
+                      <span className="absolute top-1 left-1 h-5 w-5 rounded-full bg-background/90 text-foreground text-[10px] font-semibold flex items-center justify-center">{i + 1}</span>
+                      <button onClick={() => removeCarouselItem(i)} className="absolute top-1 right-1 h-5 w-5 rounded-full bg-background/90 text-destructive text-xs leading-none opacity-0 group-hover:opacity-100">×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
                 <DialogContent className="max-w-3xl">
                   <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><Images className="h-4 w-4" /> Pick from gallery</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Images className="h-4 w-4" />
+                      {isCarousel ? "Add to carousel" : "Pick from gallery"}
+                    </DialogTitle>
                   </DialogHeader>
                   <GalleryPicker
                     items={[
@@ -282,7 +323,16 @@ export default function PostMeta() {
                       ...Object.entries(productImages).filter(([k]) => k !== "ad").map(([k, src]) => ({ src: src as string, label: k })),
                     ]}
                     selected={image}
-                    onPick={(src) => { setImage(src); setPickerOpen(false); toast.success("Image selected"); }}
+                    onPick={(src) => {
+                      if (isCarousel) {
+                        setMediaUrls(prev => prev.includes(src) ? prev : [...prev, src].slice(0, 10));
+                        toast.success("Added to carousel");
+                      } else {
+                        setImage(src);
+                        setPickerOpen(false);
+                        toast.success("Image selected");
+                      }
+                    }}
                     onGenerate={() => { setPickerOpen(false); navigate("/studio"); }}
                   />
                 </DialogContent>

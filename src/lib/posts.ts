@@ -61,6 +61,7 @@ export type PostInput = {
   captionIg: string;
   captionFb: string;
   mediaUrl: string;
+  mediaUrls?: string[];
   format: PostFormat;
   platforms: Platform[];
   scheduledAt?: string | null;
@@ -75,6 +76,7 @@ export async function createPost(input: PostInput): Promise<Post> {
     captionIg: input.captionIg,
     captionFb: input.captionFb,
     mediaUrl: input.mediaUrl,
+    mediaUrls: input.mediaUrls,
     format: input.format,
     platforms: input.platforms,
     status: input.status || (input.scheduledAt ? "scheduled" : "draft"),

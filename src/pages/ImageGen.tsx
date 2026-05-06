@@ -255,20 +255,22 @@ export default function ImageGen() {
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="px-5 pb-5 space-y-4">
+                    {/* Style (replaces model) */}
                     <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Model</Label>
-                      <Select defaultValue="nano-banana-2">
+                      <Label className="text-xs text-muted-foreground">Style</Label>
+                      <Select value={style} onValueChange={setStyle}>
                         <SelectTrigger className="h-11 rounded-lg bg-background border-border/70">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="nano-banana-2">Gemini 3.1 (w/ Nano Banana 2)</SelectItem>
-                          <SelectItem value="nano-banana-pro">Nano Banana Pro</SelectItem>
-                          <SelectItem value="gpt-image">GPT Image</SelectItem>
+                          {STYLES.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
 
+                    {/* Aspect ratio */}
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">Aspect ratio</Label>
                       <Select value={ratio} onValueChange={setRatio}>
@@ -284,6 +286,7 @@ export default function ImageGen() {
                       </Select>
                     </div>
 
+                    {/* Resolution */}
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">Resolution</Label>
                       <Select defaultValue="1k">
@@ -298,33 +301,7 @@ export default function ImageGen() {
                       </Select>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Style</Label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {STYLES.map((s) => (
-                          <button
-                            key={s.id}
-                            onClick={() => setStyle(s.id)}
-                            className={`px-2.5 py-1 rounded-full text-[11px] border transition-colors ${
-                              style === s.id
-                                ? "bg-[hsl(var(--primary))] text-primary-foreground border-[hsl(var(--primary))]"
-                                : "bg-background border-border/70 text-muted-foreground hover:text-foreground hover:border-border"
-                            }`}
-                          >
-                            {s.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs text-muted-foreground">Images</Label>
-                        <span className="text-xs font-medium tabular-nums">{count[0]}</span>
-                      </div>
-                      <Slider value={count} onValueChange={setCount} min={1} max={4} step={1} />
-                    </div>
-
+                    {/* Use Google Search */}
                     <div className="flex items-center justify-between pt-1">
                       <div className="flex items-center gap-1.5">
                         <Label className="text-sm">Use Google Search</Label>
@@ -337,7 +314,8 @@ export default function ImageGen() {
 
                 <div className="border-t border-border/60" />
 
-                <Collapsible defaultOpen>
+                {/* Reference images */}
+                <Collapsible>
                   <CollapsibleTrigger className="w-full flex items-center justify-between px-5 py-4 group">
                     <span className="text-sm font-medium">
                       Reference images <span className="text-muted-foreground font-normal">({referenceImg ? 1 : 0}/6)</span>
@@ -364,32 +342,6 @@ export default function ImageGen() {
                       </button>
                     )}
                     <input ref={fileRef} type="file" accept="image/*" hidden onChange={onUploadRef} />
-                  </CollapsibleContent>
-                </Collapsible>
-
-                <div className="border-t border-border/60" />
-
-                <Collapsible>
-                  <CollapsibleTrigger className="w-full flex items-center justify-between px-5 py-4 group">
-                    <span className="text-sm font-medium">Quick start templates</span>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="px-5 pb-5 grid grid-cols-2 gap-2">
-                    {PRESETS.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => applyPreset(p)}
-                        className="group relative overflow-hidden rounded-lg border border-border/70 bg-card hover:border-[hsl(var(--primary))]/50 transition-all"
-                      >
-                        <div className="aspect-[4/3] overflow-hidden">
-                          <img src={p.cover} alt={p.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-                        <div className="absolute inset-x-0 bottom-0 p-2 text-white">
-                          <div className="text-[11px] font-medium line-clamp-1">{p.name}</div>
-                        </div>
-                      </button>
-                    ))}
                   </CollapsibleContent>
                 </Collapsible>
               </Card>

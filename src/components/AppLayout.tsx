@@ -43,7 +43,7 @@ const sectionTitle: Record<string, string> = {
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const { user, logout, previewMode } = useAuth();
-  const nav = useNavigate();
+  const navigate = useNavigate();
   const initials = (user?.name || user?.email || "U")
     .split(/\s+/).map((s) => s[0]).slice(0, 2).join("").toUpperCase();
   const currentLabel =

@@ -67,7 +67,9 @@ export default function Scheduler() {
 
   const [year, setYear] = useState(2026);
   const [month, setMonth] = useState(4); // May
-  const [view, setView] = useState<"month" | "week" | "list">("month");
+  const [view, setView] = useState<"month" | "week" | "list">(
+    typeof window !== "undefined" && window.innerWidth < 768 ? "list" : "month"
+  );
   const [weekAnchor, setWeekAnchor] = useState<Date>(() => {
     const d = new Date(2026, 4, 4); // start of week containing May 2026
     d.setDate(d.getDate() - d.getDay());

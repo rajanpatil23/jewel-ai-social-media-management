@@ -614,7 +614,8 @@ function InstagramPreview({ image, caption, location, format, mediaUrls, videoUr
         </div>
         <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
       </div>
-      <img src={image} alt="" className="w-full aspect-square object-cover" />
+      <MediaBlock image={image} format={format} mediaUrls={mediaUrls} videoUrl={videoUrl} />
+
       <div className="p-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3"><Heart className="h-5 w-5" /><MessageCircle className="h-5 w-5" /><SendIcon className="h-5 w-5" /></div>

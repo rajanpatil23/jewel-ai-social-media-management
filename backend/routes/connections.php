@@ -63,7 +63,14 @@ function meta_callback($m) {
         exit;
     };
 
-    if (!$code || !$state) $errHtml('Missing code or state from Facebook.');
+    if (!empty($_GET['error']) || !empty($_GET['error_description']) || !empty($_GET['error_message'])) {
+        $metaError = $_GET['error_description'] ?? $_GET['error_message'] ?? $_GET['error'];
+        $errHtml('Facebook returned an error: ' . $metaError);
+    }
+
+    if (!$code || !$state) {
+        $errHtml('Missing code or state from Facebook. Start the connection only from Advora → Connections → Connect Meta, not by opening this callback URL directly. If you did start from the button, check that the Meta redirect URI exactly matches: ' . cfg()['meta_redirect_uri']);
+    }
 
     // Look up state in DB (primary), fall back to session
     $uid = null;

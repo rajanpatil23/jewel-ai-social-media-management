@@ -38,6 +38,12 @@ function fromRow(r: any): Post {
     captionIg: r.caption_ig ?? r.captionIg ?? "",
     captionFb: r.caption_fb ?? r.captionFb ?? "",
     mediaUrl: r.media_url ?? r.mediaUrl ?? "",
+    mediaUrls: (() => {
+      const v = r.media_urls ?? r.mediaUrls;
+      if (Array.isArray(v)) return v;
+      if (typeof v === "string" && v) { try { return JSON.parse(v); } catch { return undefined; } }
+      return undefined;
+    })(),
     format: (r.format || "single") as PostFormat,
     platforms: typeof r.platforms === "string"
       ? (r.platforms.split(",").filter(Boolean) as Platform[])

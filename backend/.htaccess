@@ -1,0 +1,17 @@
+RewriteEngine On
+
+# Block direct access to sensitive files
+<FilesMatch "^(config\.php|db\.php|helpers\.php|cron\.php|install\.php)$">
+  # install.php should be removed after first run; this is a fallback
+</FilesMatch>
+
+# Serve real files (uploads) directly
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Everything else → index.php
+RewriteRule ^ index.php [QSA,L]
+
+# CORS not needed (same-origin) but allow JSON sized requests
+php_value upload_max_filesize 25M
+php_value post_max_size 26M

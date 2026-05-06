@@ -1,0 +1,65 @@
+<?php
+// One-time installer. DELETE THIS FILE after running it once.
+
+require __DIR__ . '/db.php';
+
+try {
+    $pdo = db();
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+        id              CHAR(36) PRIMARY KEY,
+        email           VARCHAR(255) NOT NULL UNIQUE,
+        password_hash   VARCHAR(255) NOT NULL,
+        name            VARCHAR(120) NOT NULL,
+        created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS gallery (
+        id          CHAR(36) PRIMARY KEY,
+        user_id     CHAR(36) NOT NULL,
+        src         TEXT NOT NULL,
+        label       VARCHAR(255) NOT NULL DEFAULT '',
+        created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX (user_id, created_at),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS connections (
+        id              CHAR(36) PRIMARY KEY,
+        user_id         CHAR(36) NOT NULL,
+        provider        VARCHAR(40) NOT NULL,
+        account_label   VARCHAR(255) NOT NULL DEFAULT '',
+        access_token    TEXT,
+        refresh_token   TEXT,
+        meta            JSON,
+        expires_at      DATETIME NULL,
+        created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_user_provider (user_id, provider),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS posts (
+        id              CHAR(36) PRIMARY KEY,
+        user_id         CHAR(36) NOT NULL,
+        title           VARCHAR(255) NOT NULL DEFAULT '',
+        caption_ig      TEXT,
+        caption_fb      TEXT,
+        media_url       TEXT,
+        format          VARCHAR(20) NOT NULL DEFAULT 'image',
+        platforms       VARCHAR(120) NOT NULL DEFAULT 'instagram,facebook',
+        status          VARCHAR(20) NOT NULL DEFAULT 'draft',
+        scheduled_at    DATETIME NULL,
+        published_at    DATETIME NULL,
+        last_error      TEXT,
+        created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX (user_id, scheduled_at),
+        INDEX (status, scheduled_at),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    echo "OK — tables created. Now DELETE install.php.";
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo "ERROR: " . htmlspecialchars($e->getMessage());
+}

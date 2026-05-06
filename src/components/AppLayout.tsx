@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Sparkles,
@@ -12,9 +12,14 @@ import {
   ChevronRight,
   Plug,
   PenSquare,
+  LogOut,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/lib/auth";
 import advoraLogo from "@/assets/advora-logo.png";
 
 const nav = [
@@ -37,6 +42,10 @@ const sectionTitle: Record<string, string> = {
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
+  const { user, logout, previewMode } = useAuth();
+  const navigate = useNavigate();
+  const initials = (user?.name || user?.email || "U")
+    .split(/\s+/).map((s) => s[0]).slice(0, 2).join("").toUpperCase();
   const currentLabel =
     sectionTitle[pathname] ??
     nav.find((n) => n.to !== "/" && pathname.startsWith(n.to))?.label ??
@@ -133,11 +142,30 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <Bell className="h-4 w-4" />
               </button>
               <div className="h-6 w-px bg-border mx-1" />
-              <Avatar className="h-8 w-8 ring-1 ring-border">
-                <AvatarFallback className="bg-secondary text-foreground text-xs font-medium">
-                  MA
-                </AvatarFallback>
-              </Avatar>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 rounded-md p-0.5 hover:bg-secondary transition-colors">
+                    <Avatar className="h-8 w-8 ring-1 ring-border">
+                      <AvatarFallback className="bg-secondary text-foreground text-xs font-medium">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="text-sm font-medium truncate">{user?.name}</div>
+                    <div className="text-xs text-muted-foreground truncate">{user?.email}</div>
+                    {previewMode && (
+                      <div className="mt-1 text-[10px] uppercase tracking-wider text-amber-600">Preview mode</div>
+                    )}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={async () => { await logout(); navigate("/login"); }}>
+                    <LogOut className="h-4 w-4 mr-2" /> Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>

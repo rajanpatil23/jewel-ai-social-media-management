@@ -61,6 +61,10 @@ function item($m) {
             $fields[] = 'scheduled_at = ?';
             $vals[] = $b['scheduledAt'] ? date('Y-m-d H:i:s', strtotime($b['scheduledAt'])) : null;
         }
+        if (array_key_exists('mediaUrls', $b)) {
+            $fields[] = 'media_urls = ?';
+            $vals[] = is_array($b['mediaUrls']) ? json_encode(array_values($b['mediaUrls'])) : null;
+        }
         if (!$fields) json_out(['ok' => true]);
         $vals[] = $m['id']; $vals[] = $u['id'];
         $pdo->prepare('UPDATE posts SET ' . implode(',', $fields) . ' WHERE id = ? AND user_id = ?')->execute($vals);

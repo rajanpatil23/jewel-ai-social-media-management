@@ -645,7 +645,7 @@ function FacebookPreview({ image, caption, cta, link, format, mediaUrls, videoUr
         <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
       </div>
       <p className="px-3 pb-3 text-sm whitespace-pre-line line-clamp-4 leading-snug">{caption}</p>
-      <img src={image} alt="" className="w-full aspect-square object-cover" />
+      <MediaBlock image={image} format={format} mediaUrls={mediaUrls} videoUrl={videoUrl} />
       {(cta && cta !== "None") && (
         <div className="px-3 py-2 flex items-center justify-between border-t border-border bg-secondary/40">
           <div className="min-w-0">

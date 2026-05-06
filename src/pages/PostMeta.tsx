@@ -40,6 +40,8 @@ const formatMeta: Record<Format, { label: string; icon: typeof Square }> = {
 
 export default function PostMeta() {
   const [image, setImage] = useState<string>(hero);
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [videoUrl, setVideoUrl] = useState<string>("");
   const [format, setFormat] = useState<Format>("single");
   const [instagram, setInstagram] = useState(true);
   const [facebook, setFacebook] = useState(true);
@@ -48,6 +50,8 @@ export default function PostMeta() {
   const gallery = useGallery();
   const { isConnected } = useConnections();
   const metaConnected = isConnected("meta");
+  const isReel = format === "reel";
+  const isCarousel = format === "carousel";
 
   const [syncCaptions, setSyncCaptions] = useState(true);
   const [igCaption, setIgCaption] = useState("Timeless brilliance, crafted for you. ✨\n\n#luxuryjewelry #handcrafted #finejewelry");

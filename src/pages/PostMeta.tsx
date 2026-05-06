@@ -100,7 +100,13 @@ export default function PostMeta() {
     const platforms = [instagram && "instagram", facebook && "facebook"].filter(Boolean) as ("instagram"|"facebook")[];
     const scheduledAt = status === "scheduled" && schedule ? new Date(`${date}T${time}`).toISOString() : null;
     const title = (igCaption || fbCaption).split("\n")[0].slice(0, 80) || "Untitled post";
-    return { title, captionIg: igCaption, captionFb: fbCaption, mediaUrl: image, format, platforms, scheduledAt, status };
+    const primary = isReel ? videoUrl : (isCarousel && mediaUrls[0]) || image;
+    return {
+      title, captionIg: igCaption, captionFb: fbCaption,
+      mediaUrl: primary,
+      mediaUrls: isCarousel ? mediaUrls : undefined,
+      format, platforms, scheduledAt, status,
+    };
   };
 
   const handleSaveDraft = async () => {

@@ -13,6 +13,7 @@ import Scheduler from "./pages/Scheduler";
 import Connections from "./pages/Connections";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,8 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Privacy />} />
             <Route path="/" element={protect(<ImageGen />)} />
             <Route path="/dashboard" element={protect(<Dashboard />)} />
             <Route path="/post" element={protect(<PostMeta />)} />

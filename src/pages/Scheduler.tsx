@@ -18,6 +18,7 @@ import {
   Copy, Trash2, Pencil, PlayCircle, Filter, ListFilter,
 } from "lucide-react";
 import { scheduledPosts as seed, productImages, type ScheduledPost, type Platform, type PostStatus, type PostFormat } from "@/lib/mockData";
+import { usePosts, deletePost, updatePost, type Post } from "@/lib/posts";
 import { toast } from "sonner";
 
 const monthName = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -36,7 +37,34 @@ const formatIcon: Record<PostFormat, typeof Square> = { single: Square, carousel
 
 export default function Scheduler() {
   const navigate = useNavigate();
-  const [posts] = useState<ScheduledPost[]>(seed);
+  const { posts: realPosts, refresh } = usePosts();
+
+  // Convert real posts to ScheduledPost shape, then merge with seed (so the
+  // calendar isn't empty for first-time users). Real posts always win on id.
+  const posts: ScheduledPost[] = useMemo(() => {
+    const mapped: ScheduledPost[] = realPosts.map((p: Post) => {
+      const when = p.scheduledAt ? new Date(p.scheduledAt) : new Date(p.createdAt);
+      const date = `${when.getFullYear()}-${String(when.getMonth()+1).padStart(2,"0")}-${String(when.getDate()).padStart(2,"0")}`;
+      const time = `${String(when.getHours()).padStart(2,"0")}:${String(when.getMinutes()).padStart(2,"0")}`;
+      return {
+        id: p.id,
+        title: p.title,
+        date,
+        time,
+        platforms: p.platforms,
+        format: p.format,
+        status: p.status,
+        img: "ring",
+        caption: p.captionIg || p.captionFb,
+        lastError: p.lastError || undefined,
+        // attach mediaUrl via any-cast for inspector preview
+        ...( { mediaUrl: p.mediaUrl } as any ),
+      };
+    });
+    const ids = new Set(mapped.map(m => m.id));
+    return [...mapped, ...seed.filter(s => !ids.has(s.id))];
+  }, [realPosts]);
+
   const [year, setYear] = useState(2026);
   const [month, setMonth] = useState(4); // May
   const [view, setView] = useState<"month" | "week" | "list">("month");
@@ -290,8 +318,18 @@ export default function Scheduler() {
               post={selected}
               onEdit={() => { setOpenId(null); navigate("/post"); }}
               onDuplicate={() => toast.success("Post duplicated")}
-              onCancel={() => { toast.success("Schedule cancelled"); setOpenId(null); }}
-              onPublishNow={() => { toast.success("Publishing to Meta…"); setOpenId(null); }}
+              onCancel={async () => {
+                await deletePost(selected.id);
+                toast.success("Schedule cancelled");
+                setOpenId(null);
+                refresh();
+              }}
+              onPublishNow={async () => {
+                await updatePost(selected.id, { status: "published", scheduledAt: null });
+                toast.success("Marked as published");
+                setOpenId(null);
+                refresh();
+              }}
             />
           )}
         </SheetContent>
@@ -313,7 +351,7 @@ function ListView({ posts, onOpen }: { posts: ScheduledPost[]; onOpen: (id: stri
           {items.map(p => (
             <button key={p.id} onClick={() => onOpen(p.id)}
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/40 transition-colors text-left">
-              <img src={productImages[p.img]} alt="" className="h-10 w-10 rounded object-cover" />
+              <img src={(p as any).mediaUrl || productImages[p.img]} alt="" className="h-10 w-10 rounded object-cover" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{p.title}</p>
                 <p className="text-[11px] text-muted-foreground">{p.time} · {p.format}</p>
@@ -368,10 +406,10 @@ function Inspector({ post, onEdit, onDuplicate, onCancel, onPublishNow }: {
             {post.platforms.includes("facebook") && <TabsTrigger value="facebook" className="text-xs gap-1.5"><Facebook className="h-3.5 w-3.5" /> Facebook</TabsTrigger>}
           </TabsList>
           <TabsContent value="instagram" className="mt-3">
-            <IGPreview img={productImages[post.img]} caption={post.caption} />
+            <IGPreview img={(post as any).mediaUrl || productImages[post.img]} caption={post.caption} />
           </TabsContent>
           <TabsContent value="facebook" className="mt-3">
-            <FBPreview img={productImages[post.img]} caption={post.caption} />
+            <FBPreview img={(post as any).mediaUrl || productImages[post.img]} caption={post.caption} />
           </TabsContent>
         </Tabs>
 

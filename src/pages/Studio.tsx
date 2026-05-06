@@ -35,7 +35,7 @@ export default function Studio() {
   const [loadingType, setLoadingType] = useState<"creative" | "caption" | null>(null);
 
   const productKey = product.toLowerCase() as keyof typeof productImages;
-  const baseCaption = captionTemplates[tone].replaceAll("{product}", product.toLowerCase());
+  const baseCaption = captionTemplates[tone].split("{product}").join(product.toLowerCase());
 
   const generate = (type: "creative" | "caption") => {
     setLoadingType(type);
@@ -125,7 +125,7 @@ export default function Studio() {
               {variations.map((v, i) => (
                 <div key={i} className="rounded-xl border border-border/60 bg-secondary/20 p-4 hover:border-primary/40 transition-colors">
                   <Badge variant="outline" className="mb-2 border-primary/30 text-primary text-[10px]">{v.tag}</Badge>
-                  <p className="text-sm leading-relaxed">{v.text.replaceAll("{product}", product.toLowerCase())}</p>
+                  <p className="text-sm leading-relaxed">{v.text.split("{product}").join(product.toLowerCase())}</p>
                 </div>
               ))}
             </div>

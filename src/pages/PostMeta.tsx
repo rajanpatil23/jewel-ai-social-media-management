@@ -10,13 +10,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Instagram, Facebook, Loader2, CheckCircle2, ImagePlus, Send, Calendar as CalendarIcon,
   Heart, MessageCircle, Send as SendIcon, Bookmark, MoreHorizontal, ThumbsUp, Share2,
   Globe2, Hash, BadgeCheck, MapPin, Users, LayoutGrid, Film, Image as ImageIcon, Square, Link as LinkIcon,
-  Sparkles, ChevronRight,
+  Sparkles, ChevronRight, Images,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useGallery } from "@/lib/gallery";
+import { productImages } from "@/lib/mockData";
 import hero from "@/assets/hero-jewelry.jpg";
 
 const IG_LIMIT = 2200;
@@ -36,6 +40,9 @@ export default function PostMeta() {
   const [format, setFormat] = useState<Format>("single");
   const [instagram, setInstagram] = useState(true);
   const [facebook, setFacebook] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const navigate = useNavigate();
+  const gallery = useGallery();
 
   const [syncCaptions, setSyncCaptions] = useState(true);
   const [igCaption, setIgCaption] = useState("Timeless brilliance, crafted for you. ✨\n\n#luxuryjewelry #handcrafted #finejewelry");
@@ -132,16 +139,15 @@ export default function PostMeta() {
           {/* LEFT: form (single column, progressive) */}
           <div className="space-y-5">
             {/* 1. Media */}
-            <SectionCard step={1} title="Media" subtitle="Upload an image or video. You can replace it anytime.">
+            <SectionCard step={1} title="Media" subtitle="Pick from your AI-generated gallery, upload, or generate something new.">
               <div className="grid sm:grid-cols-[200px_1fr] gap-4">
                 <div className="relative rounded-lg overflow-hidden border border-border bg-secondary aspect-square group">
                   <img src={image} alt="Post media" className="w-full h-full object-cover" />
-                  <label className="absolute inset-0 flex items-center justify-center bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <button onClick={() => setPickerOpen(true)} className="absolute inset-0 flex items-center justify-center bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-background border border-border text-xs font-medium">
-                      <ImagePlus className="h-3.5 w-3.5" /> Replace
+                      <Images className="h-3.5 w-3.5" /> Change
                     </span>
-                    <input type="file" accept="image/*,video/*" className="hidden" onChange={onUpload} />
-                  </label>
+                  </button>
                 </div>
                 <div className="space-y-3">
                   <div>
@@ -162,12 +168,37 @@ export default function PostMeta() {
                       })}
                     </div>
                   </div>
-                  <label className="inline-flex w-full items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer border border-dashed border-border rounded-md py-2.5 transition-colors">
-                    <ImagePlus className="h-3.5 w-3.5" /> Or upload from device
-                    <input type="file" accept="image/*,video/*" className="hidden" onChange={onUpload} />
-                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} className="gap-1.5 text-xs">
+                      <Images className="h-3.5 w-3.5" /> Gallery
+                    </Button>
+                    <label className="inline-flex items-center justify-center gap-1.5 text-xs cursor-pointer border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md h-9 px-3 font-medium">
+                      <ImagePlus className="h-3.5 w-3.5" /> Upload
+                      <input type="file" accept="image/*,video/*" className="hidden" onChange={onUpload} />
+                    </label>
+                    <Button variant="outline" size="sm" onClick={() => navigate("/studio")} className="gap-1.5 text-xs">
+                      <Sparkles className="h-3.5 w-3.5" /> Generate
+                    </Button>
+                  </div>
                 </div>
               </div>
+
+              <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+                <DialogContent className="max-w-3xl">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><Images className="h-4 w-4" /> Pick from gallery</DialogTitle>
+                  </DialogHeader>
+                  <GalleryPicker
+                    items={[
+                      ...gallery.map((g) => ({ src: g.src, label: g.label })),
+                      ...Object.entries(productImages).filter(([k]) => k !== "ad").map(([k, src]) => ({ src: src as string, label: k })),
+                    ]}
+                    selected={image}
+                    onPick={(src) => { setImage(src); setPickerOpen(false); toast.success("Image selected"); }}
+                    onGenerate={() => { setPickerOpen(false); navigate("/studio"); }}
+                  />
+                </DialogContent>
+              </Dialog>
             </SectionCard>
 
             {/* 2. Platforms */}
@@ -313,6 +344,49 @@ export default function PostMeta() {
         </div>
       </div>
     </AppLayout>
+  );
+}
+
+function GalleryPicker({ items, selected, onPick, onGenerate }: {
+  items: { src: string; label: string }[];
+  selected: string;
+  onPick: (src: string) => void;
+  onGenerate: () => void;
+}) {
+  if (items.length === 0) {
+    return (
+      <div className="py-12 text-center space-y-3">
+        <Images className="h-10 w-10 mx-auto text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">No creatives yet. Generate your first image in the Studio.</p>
+        <Button onClick={onGenerate} size="sm" className="gap-1.5"><Sparkles className="h-4 w-4" /> Open Studio</Button>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{items.length} creative{items.length !== 1 ? "s" : ""} available</p>
+        <Button variant="ghost" size="sm" onClick={onGenerate} className="gap-1.5 text-xs"><Sparkles className="h-3.5 w-3.5" /> Generate new</Button>
+      </div>
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[60vh] overflow-y-auto pr-1">
+        {items.map((item, i) => {
+          const active = item.src === selected;
+          return (
+            <button key={`${item.src}-${i}`} onClick={() => onPick(item.src)}
+              className={`relative aspect-square rounded-md overflow-hidden border-2 transition-all ${
+                active ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-border"
+              }`}>
+              <img src={item.src} alt={item.label} className="w-full h-full object-cover" loading="lazy" />
+              {active && (
+                <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                  <CheckCircle2 className="h-3 w-3" />
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

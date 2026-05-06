@@ -95,7 +95,7 @@ export default function ImageGen() {
   const [quality, setQuality] = useState([75]);
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
-  const [results, setResults] = useState<GenItem[]>(SAMPLES);
+  const [results, setResults] = useState<GenItem[]>([]);
   const [referenceImg, setReferenceImg] = useState<string | null>(null);
   const [collections, setCollections] = useState<GenItem[]>([]);
   const [gallery, setGallery] = useState<GenItem[]>(SAMPLES);
@@ -349,7 +349,7 @@ export default function ImageGen() {
               {/* RIGHT: Canvas area — static, no scroll */}
               <div className="flex flex-col min-w-0 h-full overflow-hidden">
                 <div className="flex-1 flex items-center justify-center">
-                  {!loading && history.length <= 3 && results === SAMPLES ? (
+                  {!loading && results.length === 0 ? (
                     <div className="text-center max-w-md mx-auto px-6 py-12">
                       <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(var(--primary))]/30 to-[hsl(var(--primary-deep))]/30 mb-5 relative">
                         <ImageIcon className="h-9 w-9 text-[hsl(var(--primary))]" />

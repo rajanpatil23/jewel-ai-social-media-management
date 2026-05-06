@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Deletion Status — Ekhadi Jewels</title>
+  <meta name="robots" content="noindex" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+           background: #faf7f2; color: #2a2a2a; margin: 0; padding: 0;
+           display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .card { background: #fff; max-width: 560px; margin: 24px; padding: 40px;
+            border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,.06); }
+    h1 { margin: 0 0 12px; font-size: 24px; color: #8b5a2b; }
+    p  { line-height: 1.6; margin: 12px 0; }
+    .code { background: #f4efe7; padding: 8px 12px; border-radius: 6px;
+            font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+    a { color: #8b5a2b; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Data Deletion Request Received</h1>
+    <p>Your request to delete personal data associated with your Ekhadi Jewels account has been received and is being processed.</p>
+    <p>We will permanently remove your data from our systems within <strong>30 days</strong>, in line with our Privacy Policy.</p>
+    <p><strong>Your confirmation code:</strong></p>
+    <p class="code" id="code">—</p>
+    <p>Please save this code. For any questions, contact us at
+       <a href="mailto:support@ekhadijewels.com">support@ekhadijewels.com</a>.</p>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) document.getElementById('code').textContent = code;
+  </script>
+</body>
+</html>

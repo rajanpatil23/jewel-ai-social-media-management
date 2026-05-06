@@ -7,6 +7,7 @@ export type Connection = {
   account_label: string;
   expires_at: string | null;
   created_at: string;
+  meta?: Record<string, any>;
 };
 
 const KEY = "advora.connections";
@@ -19,18 +20,39 @@ function writeLocal(items: Connection[]) {
   window.dispatchEvent(new Event("connections:update"));
 }
 
-export async function connectMeta(label = "Maison Aurelia (Meta)") {
-  // NOTE: real Meta OAuth would redirect. For now, MOCK connect.
-  const local: Connection = {
-    id: crypto.randomUUID(),
-    provider: "meta",
-    account_label: label,
-    expires_at: null,
-    created_at: new Date().toISOString(),
-  };
-  const next = [...readLocal().filter(c => c.provider !== "meta"), local];
-  writeLocal(next);
-  await tryApi(() => api.post("/connections/meta/connect", { account_label: label }));
+// Returns "oauth" | "mock" | "preview" so the UI can react.
+export async function connectMeta(): Promise<"oauth" | "mock" | "preview"> {
+  const r = await tryApi(() =>
+    api.post<{ mode: "oauth" | "mock"; url?: string; ok?: boolean }>("/connections/meta/connect"),
+  );
+  if (!r) {
+    // No backend (preview) — fake a connection locally so the UI works.
+    const local: Connection = {
+      id: crypto.randomUUID(), provider: "meta",
+      account_label: "Demo Meta (preview)",
+      expires_at: null, created_at: new Date().toISOString(),
+      meta: { mock: true },
+    };
+    writeLocal([...readLocal().filter(c => c.provider !== "meta"), local]);
+    return "preview";
+  }
+  if (r.mode === "oauth" && r.url) {
+    // Open Facebook OAuth in popup; backend posts a message back when done.
+    const w = 600, h = 720;
+    const left = window.screenX + (window.outerWidth - w) / 2;
+    const top  = window.screenY + (window.outerHeight - h) / 2.5;
+    const popup = window.open(r.url, "meta-oauth", `width=${w},height=${h},left=${left},top=${top}`);
+    if (!popup) { window.location.href = r.url; return "oauth"; }
+    await new Promise<void>((resolve) => {
+      const onMsg = (ev: MessageEvent) => {
+        if (ev.data?.type === "meta-connected") { window.removeEventListener("message", onMsg); resolve(); }
+      };
+      window.addEventListener("message", onMsg);
+      const t = setInterval(() => { if (popup.closed) { clearInterval(t); window.removeEventListener("message", onMsg); resolve(); } }, 800);
+    });
+    return "oauth";
+  }
+  return "mock";
 }
 
 export async function disconnectMeta() {

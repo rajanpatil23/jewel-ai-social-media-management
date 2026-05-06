@@ -11,6 +11,7 @@ export interface Post {
   captionIg: string;
   captionFb: string;
   mediaUrl: string;
+  mediaUrls?: string[];
   format: PostFormat;
   platforms: Platform[];
   status: PostStatus;

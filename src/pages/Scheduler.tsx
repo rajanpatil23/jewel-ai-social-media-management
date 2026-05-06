@@ -40,6 +40,11 @@ export default function Scheduler() {
   const [year, setYear] = useState(2026);
   const [month, setMonth] = useState(4); // May
   const [view, setView] = useState<"month" | "week" | "list">("month");
+  const [weekAnchor, setWeekAnchor] = useState<Date>(() => {
+    const d = new Date(2026, 4, 4); // start of week containing May 2026
+    d.setDate(d.getDate() - d.getDay());
+    return d;
+  });
   const [openId, setOpenId] = useState<string | null>(null);
 
   const [platformFilter, setPlatformFilter] = useState<Record<Platform, boolean>>({ instagram: true, facebook: true });

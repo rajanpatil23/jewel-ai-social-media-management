@@ -105,9 +105,6 @@ export default function PostMeta() {
             <Badge variant="secondary" className="gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Meta connected
             </Badge>
-            <Button variant="luxe" size="sm">
-              <Sparkles className="h-4 w-4" /> AI assist
-            </Button>
           </div>
         </div>
 

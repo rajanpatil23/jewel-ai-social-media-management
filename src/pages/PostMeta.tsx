@@ -138,9 +138,8 @@ export default function PostMeta() {
                 {schedule && date && time ? ` · ${date} ${time}` : ""}
               </p>
             </div>
-            <Badge variant="secondary" className="gap-1.5 hidden md:inline-flex">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Meta connected
-            </Badge>
+            <MetaBadge />
+
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm">Save draft</Button>

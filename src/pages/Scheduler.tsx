@@ -212,31 +212,46 @@ export default function Scheduler() {
           ) : (
             <div>
               <div className="grid grid-cols-7 border-b border-border bg-secondary/30">
-                {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d =>
-                  <div key={d} className="text-center text-[10px] uppercase tracking-widest text-muted-foreground py-2">{d}</div>
-                )}
+                {(view === "week" ? weekCells : null)
+                  ? weekCells.map((c) => (
+                      <div key={c.iso} className="text-center py-2">
+                        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                          {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][c.date.getDay()]}
+                        </div>
+                        <div className={`text-sm font-medium tabular-nums mt-0.5 inline-flex items-center justify-center h-6 min-w-6 px-1.5 rounded-full ${
+                          c.iso === todayIso ? "bg-primary text-primary-foreground" : "text-foreground"
+                        }`}>{c.day}</div>
+                      </div>
+                    ))
+                  : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d =>
+                      <div key={d} className="text-center text-[10px] uppercase tracking-widest text-muted-foreground py-2">{d}</div>
+                    )}
               </div>
-              <div className="grid grid-cols-7 grid-rows-6">
-                {cells.map((c, i) => {
+              <div className={`grid grid-cols-7 ${view === "month" ? "grid-rows-6" : ""}`}>
+                {(view === "week" ? weekCells : cells).map((c, i) => {
                   const dayPosts = postsByDate[c.iso] || [];
                   const isToday = c.iso === todayIso;
+                  const isWeek = view === "week";
+                  const total = isWeek ? 7 : 42;
                   return (
                     <div key={i}
-                      className={`min-h-[120px] border-b border-r border-border p-1.5 ${
+                      className={`${isWeek ? "min-h-[520px]" : "min-h-[120px]"} border-b border-r border-border p-1.5 ${
                         i % 7 === 6 ? "border-r-0" : ""
-                      } ${i >= 35 ? "border-b-0" : ""} ${
+                      } ${i >= total - 7 ? "border-b-0" : ""} ${
                         c.inMonth ? "bg-card" : "bg-muted/20"
                       }`}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className={`text-[11px] font-medium tabular-nums inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full ${
-                          isToday ? "bg-primary text-primary-foreground" : c.inMonth ? "text-foreground" : "text-muted-foreground/60"
-                        }`}>{c.day}</span>
-                        {dayPosts.length > 0 && (
-                          <span className="text-[9px] text-muted-foreground tabular-nums">{dayPosts.length}</span>
-                        )}
-                      </div>
+                      {!isWeek && (
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-[11px] font-medium tabular-nums inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full ${
+                            isToday ? "bg-primary text-primary-foreground" : c.inMonth ? "text-foreground" : "text-muted-foreground/60"
+                          }`}>{c.day}</span>
+                          {dayPosts.length > 0 && (
+                            <span className="text-[9px] text-muted-foreground tabular-nums">{dayPosts.length}</span>
+                          )}
+                        </div>
+                      )}
                       <div className="space-y-1">
-                        {dayPosts.slice(0,3).map(p => (
+                        {(isWeek ? dayPosts : dayPosts.slice(0,3)).map(p => (
                           <button key={p.id} onClick={() => setOpenId(p.id)}
                             className={`w-full flex items-center gap-1 px-1.5 py-1 rounded border text-left transition-colors hover:brightness-110 ${statusBadge[p.status]}`}>
                             <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[p.status]}`} />
@@ -249,11 +264,13 @@ export default function Scheduler() {
                             {p.status === "failed" && <AlertTriangle className="h-2.5 w-2.5 shrink-0" />}
                           </button>
                         ))}
-                        {dayPosts.length > 3 && (
-                          <button onClick={() => { /* could open day list */ }}
-                            className="w-full text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 text-left">
+                        {!isWeek && dayPosts.length > 3 && (
+                          <div className="w-full text-[10px] text-muted-foreground px-1.5 py-0.5 text-left">
                             +{dayPosts.length-3} more
-                          </button>
+                          </div>
+                        )}
+                        {isWeek && dayPosts.length === 0 && (
+                          <p className="text-[10px] text-muted-foreground/60 px-1 py-1">No posts</p>
                         )}
                       </div>
                     </div>

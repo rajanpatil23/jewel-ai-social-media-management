@@ -20,13 +20,42 @@ export const recentPosts = [
   { id: 4, title: "Bangle Bar Festival Edit", platform: "Both", img: "bracelet", likes: 6820, comments: 211, status: "Published" },
 ];
 
-export const scheduledPosts = [
-  { id: 1, title: "Diwali Gold Edit", date: "2026-05-08", time: "19:00", platform: "Instagram", img: "necklace", type: "Campaign" },
-  { id: 2, title: "Bridal Sneak Peek", date: "2026-05-10", time: "11:00", platform: "Both", img: "ring", type: "Campaign" },
-  { id: 3, title: "Earring Tuesday", date: "2026-05-12", time: "17:30", platform: "Facebook", img: "earrings", type: "Post" },
-  { id: 4, title: "Heritage Story", date: "2026-05-15", time: "20:00", platform: "Instagram", img: "bracelet", type: "Post" },
-  { id: 5, title: "Weekend Sale", date: "2026-05-17", time: "09:00", platform: "Both", img: "ring", type: "Draft" },
-  { id: 6, title: "Anniversary Capsule", date: "2026-05-22", time: "18:00", platform: "Instagram", img: "necklace", type: "Campaign" },
+export type PostStatus = "scheduled" | "draft" | "published" | "failed";
+export type PostFormat = "single" | "carousel" | "reel" | "story";
+export type Platform = "instagram" | "facebook";
+
+export interface ScheduledPost {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm 24h
+  platforms: Platform[];
+  format: PostFormat;
+  status: PostStatus;
+  img: keyof typeof productImages;
+  caption: string;
+  ig?: { location?: string; collaborators?: string[]; firstComment?: string; shareToFeed?: boolean };
+  fb?: { ctaButton?: string; link?: string; place?: string; targeting?: string };
+  lastError?: string;
+}
+
+export const scheduledPosts: ScheduledPost[] = [
+  { id: "p1", title: "Diwali Gold Edit", date: "2026-05-08", time: "19:00", platforms: ["instagram"], format: "single", status: "scheduled", img: "necklace",
+    caption: "Light up the season ✨ #DiwaliGold #FineJewelry", ig: { location: "Mumbai, India", firstComment: "Tap to shop ↗" } },
+  { id: "p2", title: "Bridal Sneak Peek", date: "2026-05-10", time: "11:00", platforms: ["instagram","facebook"], format: "carousel", status: "scheduled", img: "ring",
+    caption: "Begin forever in brilliance.", ig: { collaborators: ["@bridesofindia"] }, fb: { ctaButton: "Shop Now", link: "https://maisonaurelia.com/bridal" } },
+  { id: "p3", title: "Earring Tuesday", date: "2026-05-12", time: "17:30", platforms: ["facebook"], format: "single", status: "scheduled", img: "earrings",
+    caption: "Drop into Tuesday with our diamond drops.", fb: { ctaButton: "Learn More", place: "Bandra, Mumbai" } },
+  { id: "p4", title: "Heritage Reel", date: "2026-05-15", time: "20:00", platforms: ["instagram"], format: "reel", status: "scheduled", img: "bracelet",
+    caption: "Heirlooms reimagined.", ig: { shareToFeed: true } },
+  { id: "p5", title: "Weekend Sale", date: "2026-05-17", time: "09:00", platforms: ["instagram","facebook"], format: "single", status: "draft", img: "ring",
+    caption: "Up to 20% off — this weekend only." },
+  { id: "p6", title: "Anniversary Capsule", date: "2026-05-22", time: "18:00", platforms: ["instagram"], format: "carousel", status: "scheduled", img: "necklace",
+    caption: "A decade of brilliance." },
+  { id: "p7", title: "Spring Lookbook", date: "2026-05-04", time: "10:00", platforms: ["instagram","facebook"], format: "single", status: "published", img: "earrings",
+    caption: "Spring drops are live." },
+  { id: "p8", title: "Festive Teaser", date: "2026-05-06", time: "12:00", platforms: ["facebook"], format: "single", status: "failed", img: "bracelet",
+    caption: "Festive teaser.", lastError: "FB: Page access token expired (190)" },
 ];
 
 export const campaigns = [

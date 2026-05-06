@@ -7,6 +7,8 @@ import ImageGen from "./pages/ImageGen";
 import PostMeta from "./pages/PostMeta";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
+import Scheduler from "./pages/Scheduler";
+import Connections from "./pages/Connections";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -21,6 +23,8 @@ const App = () => (
           <Route path="/" element={<ImageGen />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/post" element={<PostMeta />} />
+          <Route path="/schedule" element={<Scheduler />} />
+          <Route path="/connections" element={<Connections />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

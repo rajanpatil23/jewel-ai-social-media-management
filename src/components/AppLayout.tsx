@@ -10,6 +10,8 @@ import {
   HelpCircle,
   Settings,
   ChevronRight,
+  Plug,
+  PenSquare,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -18,15 +20,19 @@ import advoraLogo from "@/assets/advora-logo.png";
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/", label: "AI Studio", icon: Sparkles },
-  { to: "/post", label: "Scheduler", icon: CalendarDays },
+  { to: "/post", label: "Composer", icon: PenSquare },
+  { to: "/schedule", label: "Scheduler", icon: CalendarDays },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/connections", label: "Connections", icon: Plug },
 ];
 
 const sectionTitle: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/": "AI Studio",
-  "/post": "Scheduler",
+  "/post": "Composer",
+  "/schedule": "Scheduler",
   "/analytics": "Analytics",
+  "/connections": "Connections",
 };
 
 export default function AppLayout({ children }: { children: ReactNode }) {

@@ -91,6 +91,7 @@ export async function createPost(input: PostInput): Promise<Post> {
     captionIg: input.captionIg,
     captionFb: input.captionFb,
     mediaUrl: input.mediaUrl,
+    mediaUrls: input.mediaUrls,
     format: input.format,
     platforms: input.platforms.join(","),
     status: input.status,

@@ -35,22 +35,50 @@ foreach ($rows as $p) {
         if (!$pageId || !$pageToken) throw new Exception('missing_page_token');
 
         $platforms = array_filter(array_map('trim', explode(',', $p['platforms'] ?? '')));
+        $format = $p['format'] ?? 'single';
 
-        // Resolve absolute media URL for IG (must be public HTTPS)
-        $media = $p['media_url'] ?? '';
-        if ($media && str_starts_with($media, '/')) $media = $siteUrl . $media;
+        $abs = function($u) use ($siteUrl) {
+            if (!$u) return $u;
+            return str_starts_with($u, '/') ? $siteUrl . $u : $u;
+        };
+        $media = $abs($p['media_url'] ?? '');
+        $mediaUrls = [];
+        if (!empty($p['media_urls'])) {
+            $arr = json_decode($p['media_urls'], true);
+            if (is_array($arr)) $mediaUrls = array_map($abs, $arr);
+        }
+        if (!$mediaUrls && $media) $mediaUrls = [$media];
 
         $captionFb = $p['caption_fb'] ?: $p['caption_ig'];
         $captionIg = $p['caption_ig'] ?: $p['caption_fb'];
 
+        $isVideo = in_array($format, ['reel','video'], true) ||
+                   ($media && preg_match('#\.(mp4|mov|m4v)$#i', $media));
+        $isCarousel = $format === 'carousel' && count($mediaUrls) >= 2;
+
         $results = [];
         if (in_array('facebook', $platforms)) {
-            $results['fb'] = meta_publish_facebook($pageId, $pageToken, $media ?: null, (string)$captionFb);
+            if ($isVideo && $media) {
+                $results['fb'] = meta_publish_facebook_video($pageId, $pageToken, $media, (string)$captionFb);
+            } elseif ($isCarousel) {
+                $results['fb'] = meta_publish_facebook_carousel($pageId, $pageToken, $mediaUrls, (string)$captionFb);
+            } else {
+                $results['fb'] = meta_publish_facebook($pageId, $pageToken, $media ?: null, (string)$captionFb);
+            }
         }
         if (in_array('instagram', $platforms)) {
             if (!$igUser) throw new Exception('no_instagram_business_account');
-            if (!$media || !preg_match('#^https://#i', $media)) throw new Exception('ig_requires_public_https_image');
-            $results['ig'] = meta_publish_instagram($igUser, $pageToken, $media, (string)$captionIg);
+            foreach ($mediaUrls as $u) {
+                if (!preg_match('#^https://#i', $u)) throw new Exception('ig_requires_public_https_media');
+            }
+            if ($isVideo && $media) {
+                $results['ig'] = meta_publish_instagram_reel($igUser, $pageToken, $media, (string)$captionIg, true);
+            } elseif ($isCarousel) {
+                $results['ig'] = meta_publish_instagram_carousel($igUser, $pageToken, $mediaUrls, (string)$captionIg);
+            } else {
+                if (!$media) throw new Exception('ig_requires_media');
+                $results['ig'] = meta_publish_instagram($igUser, $pageToken, $media, (string)$captionIg);
+            }
         }
 
         $pdo->prepare("UPDATE posts SET status='published', published_at=NOW(), last_error=NULL WHERE id = ?")

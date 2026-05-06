@@ -394,8 +394,8 @@ export default function ImageGen() {
                 </Collapsible>
               </Card>
 
-              {/* RIGHT: Canvas area */}
-              <div className="flex flex-col min-w-0 min-h-[calc(100vh-220px)]">
+              {/* RIGHT: Canvas area — static, no scroll */}
+              <div className="flex flex-col min-w-0 h-full overflow-hidden">
                 <div className="flex-1 flex items-center justify-center">
                   {!loading && history.length <= 3 && results === SAMPLES ? (
                     <div className="text-center max-w-md mx-auto px-6 py-12">

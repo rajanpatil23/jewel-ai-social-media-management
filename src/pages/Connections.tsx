@@ -28,9 +28,11 @@ export default function Connections() {
   const handleConnect = async () => {
     setBusy(true);
     try {
-      await connectMeta();
-      toast.success("Meta connected (mock — real OAuth pending)");
+      const mode = await connectMeta();
       await refresh();
+      if (mode === "oauth") toast.success("Meta connected via Facebook");
+      else if (mode === "mock") toast.success("Meta connected (demo — set Meta App ID/Secret in api/config.php for real OAuth)");
+      else toast.success("Connected (preview mode — backend not running)");
     } catch (e: any) {
       toast.error(e?.message || "Failed to connect");
     } finally { setBusy(false); }

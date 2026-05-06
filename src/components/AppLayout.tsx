@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, Sparkles, CalendarDays, BarChart3 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import advoraLogo from "@/assets/advora-logo.png";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -17,11 +18,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 h-16 border-b border-border/70 bg-background/85 backdrop-blur">
         <div className="h-full max-w-6xl mx-auto flex items-center gap-8 px-4 md:px-8">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-md bg-[hsl(var(--primary))] flex items-center justify-center shadow-[var(--shadow-gold)]">
-              <span className="font-display text-primary-foreground text-sm">A</span>
-            </div>
+            <img src={advoraLogo} alt="Advora" className="h-9 w-9 object-contain" />
             <div className="leading-tight">
-              <div className="font-display text-lg tracking-tight">Aurum</div>
+              <div className="font-display text-lg tracking-tight">Advora</div>
             </div>
           </div>
           <nav className="hidden md:flex items-center gap-1">

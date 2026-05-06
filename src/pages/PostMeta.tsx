@@ -23,6 +23,7 @@ import { useGallery } from "@/lib/gallery";
 import { productImages } from "@/lib/mockData";
 import { createPost } from "@/lib/posts";
 import { useConnections } from "@/lib/connections";
+import { api, tryApi } from "@/lib/api";
 import hero from "@/assets/hero-jewelry.jpg";
 
 const IG_LIMIT = 2200;
@@ -91,6 +92,22 @@ export default function PostMeta() {
 
   const platformsSelected = (instagram ? 1 : 0) + (facebook ? 1 : 0);
 
+  const buildPayload = (status: "published" | "scheduled" | "draft") => {
+    const platforms = [instagram && "instagram", facebook && "facebook"].filter(Boolean) as ("instagram"|"facebook")[];
+    const scheduledAt = status === "scheduled" && schedule ? new Date(`${date}T${time}`).toISOString() : null;
+    const title = (igCaption || fbCaption).split("\n")[0].slice(0, 80) || "Untitled post";
+    return { title, captionIg: igCaption, captionFb: fbCaption, mediaUrl: image, format, platforms, scheduledAt, status };
+  };
+
+  const handleSaveDraft = async () => {
+    setPosting(true);
+    try {
+      await createPost(buildPayload("draft"));
+      toast.success("Draft saved");
+    } catch (e: any) { toast.error(e?.message || "Failed to save draft"); }
+    finally { setPosting(false); }
+  };
+
   const handlePost = async () => {
     if (!instagram && !facebook) return toast.error("Select at least one platform");
     if (instagram && igOver) return toast.error("Instagram caption exceeds 2,200 chars");
@@ -99,21 +116,9 @@ export default function PostMeta() {
     if (schedule && (!date || !time)) return toast.error("Pick date & time to schedule");
     setPosting(true); setPosted(false);
     try {
-      const platforms = [instagram && "instagram", facebook && "facebook"].filter(Boolean) as ("instagram"|"facebook")[];
-      const scheduledAt = schedule ? new Date(`${date}T${time}`).toISOString() : null;
-      const title = (igCaption || fbCaption).split("\n")[0].slice(0, 80) || "Untitled post";
-      await createPost({
-        title,
-        captionIg: igCaption,
-        captionFb: fbCaption,
-        mediaUrl: image,
-        format,
-        platforms,
-        scheduledAt,
-        status: schedule ? "scheduled" : "published",
-      });
+      await createPost(buildPayload(schedule ? "scheduled" : "published"));
       setPosted(true);
-      const where = platforms.map(p => p === "instagram" ? "Instagram" : "Facebook").join(" & ");
+      const where = [instagram && "Instagram", facebook && "Facebook"].filter(Boolean).join(" & ");
       toast.success(schedule ? `Scheduled for ${date} ${time} → ${where}` : `Queued for ${where}`);
       if (schedule) setTimeout(() => navigate("/schedule"), 800);
     } catch (e: any) {
@@ -123,9 +128,17 @@ export default function PostMeta() {
     }
   };
 
-  const onUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setImage(URL.createObjectURL(file));
+    if (!file) return;
+    // Optimistic preview
+    setImage(URL.createObjectURL(file));
+    // Best-effort upload to backend so cron can publish a public URL
+    const r = await tryApi(() => api.upload<{ url: string }>("/upload", file));
+    if (r?.url) {
+      setImage(r.url);
+      toast.success("Uploaded");
+    }
   };
 
   return (
@@ -153,7 +166,7 @@ export default function PostMeta() {
 
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm">Save draft</Button>
+            <Button variant="ghost" size="sm" onClick={handleSaveDraft} disabled={posting}>Save draft</Button>
             <Button onClick={handlePost} disabled={posting} size="sm" className="gap-1.5">
               {posting ? <><Loader2 className="h-4 w-4 animate-spin" /> {schedule ? "Scheduling…" : "Publishing…"}</>
                 : posted ? <><CheckCircle2 className="h-4 w-4" /> {schedule ? "Scheduled" : "Posted"}</>

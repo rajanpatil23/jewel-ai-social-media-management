@@ -575,7 +575,28 @@ function Field({ label, icon, children }: { label: string; icon?: React.ReactNod
   );
 }
 
-function InstagramPreview({ image, caption, location }: { image: string; caption: string; location?: string }) {
+function MediaBlock({ image, format, mediaUrls, videoUrl, aspect = "aspect-square" }: { image: string; format: Format; mediaUrls?: string[]; videoUrl?: string; aspect?: string }) {
+  if (format === "reel") {
+    return videoUrl
+      ? <video src={videoUrl} controls className={`w-full ${aspect === "aspect-square" ? "aspect-[9/16]" : aspect} object-cover bg-black`} />
+      : <div className={`w-full ${aspect} bg-secondary flex items-center justify-center text-muted-foreground`}><Film className="h-8 w-8" /></div>;
+  }
+  if (format === "carousel" && mediaUrls && mediaUrls.length > 0) {
+    return (
+      <div className={`relative w-full ${aspect} overflow-hidden bg-black`}>
+        <div className="flex h-full w-full snap-x snap-mandatory overflow-x-auto">
+          {mediaUrls.map((src, i) => (
+            <img key={`${src}-${i}`} src={src} alt="" className="h-full w-full flex-shrink-0 snap-start object-cover" />
+          ))}
+        </div>
+        <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-background/80 text-[10px] font-medium">1/{mediaUrls.length}</div>
+      </div>
+    );
+  }
+  return <img src={image} alt="" className={`w-full ${aspect} object-cover`} />;
+}
+
+function InstagramPreview({ image, caption, location, format, mediaUrls, videoUrl }: { image: string; caption: string; location?: string; format: Format; mediaUrls?: string[]; videoUrl?: string }) {
   return (
     <Card className="overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">

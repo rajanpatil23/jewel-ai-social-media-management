@@ -40,6 +40,9 @@ export default function PostMeta() {
   const [format, setFormat] = useState<Format>("single");
   const [instagram, setInstagram] = useState(true);
   const [facebook, setFacebook] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const navigate = useNavigate();
+  const gallery = useGallery();
 
   const [syncCaptions, setSyncCaptions] = useState(true);
   const [igCaption, setIgCaption] = useState("Timeless brilliance, crafted for you. ✨\n\n#luxuryjewelry #handcrafted #finejewelry");

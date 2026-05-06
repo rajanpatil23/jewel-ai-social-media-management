@@ -3,8 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Facebook, Instagram, CheckCircle2, RefreshCw, Plug, ExternalLink, ShieldCheck } from "lucide-react";
+import { Facebook, Instagram, CheckCircle2, RefreshCw, Plug, ExternalLink, ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useConnections, connectMeta, disconnectMeta } from "@/lib/connections";
+import { useState } from "react";
 
 const META_SCOPES = [
   { id: "pages_manage_posts",       label: "Publish posts to Pages" },
@@ -18,6 +20,30 @@ const META_SCOPES = [
 ];
 
 export default function Connections() {
+  const { items, refresh, isConnected } = useConnections();
+  const meta = items.find(i => i.provider === "meta");
+  const connected = isConnected("meta");
+  const [busy, setBusy] = useState(false);
+
+  const handleConnect = async () => {
+    setBusy(true);
+    try {
+      await connectMeta();
+      toast.success("Meta connected (mock — real OAuth pending)");
+      await refresh();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to connect");
+    } finally { setBusy(false); }
+  };
+  const handleDisconnect = async () => {
+    setBusy(true);
+    try {
+      await disconnectMeta();
+      toast.success("Meta disconnected");
+      await refresh();
+    } finally { setBusy(false); }
+  };
+
   return (
     <AppLayout>
       <div className="mx-auto max-w-[1100px] space-y-6">
@@ -29,65 +55,74 @@ export default function Connections() {
           </p>
         </div>
 
-        {/* Meta */}
         <Card className="p-6">
           <div className="flex items-start gap-4">
             <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-sky-500 to-purple-600 flex items-center justify-center text-white font-bold">M</div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-semibold">Meta</h2>
-                <Badge variant="secondary" className="gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Connected
-                </Badge>
+                {connected ? (
+                  <Badge variant="secondary" className="gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Connected
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60" /> Not connected
+                  </Badge>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Facebook Pages + Instagram Business via Meta Graph API · token expires in 58 days</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {connected
+                  ? `${meta?.account_label || "Meta account"} · Facebook Pages + Instagram Business via Meta Graph API`
+                  : "Connect to publish posts and pull insights from your pages."}
+              </p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => toast.success("Token refreshed")}>
-                <RefreshCw className="h-3.5 w-3.5" /> Refresh
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => toast.message("Disconnect flow (mock)")}>Disconnect</Button>
+              {connected ? (
+                <>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { refresh(); toast.success("Refreshed"); }} disabled={busy}>
+                    <RefreshCw className="h-3.5 w-3.5" /> Refresh
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleDisconnect} disabled={busy}>
+                    {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Disconnect"}
+                  </Button>
+                </>
+              ) : (
+                <Button size="sm" className="gap-1.5" onClick={handleConnect} disabled={busy}>
+                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plug className="h-3.5 w-3.5" />} Connect Meta
+                </Button>
+              )}
             </div>
           </div>
 
-          <Separator className="my-5" />
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <AssetCard
-              icon={<Facebook className="h-4 w-4 text-sky-600" />}
-              title="Maison Aurelia"
-              subtitle="Facebook Page · 184K followers"
-              meta="Page ID · 102938475"
-            />
-            <AssetCard
-              icon={<Instagram className="h-4 w-4 text-pink-500" />}
-              title="@maison.aurelia"
-              subtitle="Instagram Business · 312K followers"
-              meta="IG User ID · 17841405822304914"
-            />
-          </div>
-
-          <Separator className="my-5" />
-
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2 flex items-center gap-1.5">
-              <ShieldCheck className="h-3 w-3" /> Granted permissions
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {META_SCOPES.map(s => (
-                <Badge key={s.id} variant="outline" className="text-[11px] gap-1 font-normal">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-500" /> {s.label}
-                </Badge>
-              ))}
-            </div>
-            <a href="https://developers.facebook.com/docs/permissions" target="_blank" rel="noreferrer"
-               className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground mt-3">
-              About Meta permissions <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
+          {connected && (
+            <>
+              <Separator className="my-5" />
+              <div className="grid md:grid-cols-2 gap-4">
+                <AssetCard icon={<Facebook className="h-4 w-4 text-sky-600" />} title="Maison Aurelia" subtitle="Facebook Page" meta="Page · linked to your Meta account" />
+                <AssetCard icon={<Instagram className="h-4 w-4 text-pink-500" />} title="@maison.aurelia" subtitle="Instagram Business" meta="Linked via Facebook Page" />
+              </div>
+              <Separator className="my-5" />
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <ShieldCheck className="h-3 w-3" /> Granted permissions
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {META_SCOPES.map(s => (
+                    <Badge key={s.id} variant="outline" className="text-[11px] gap-1 font-normal">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" /> {s.label}
+                    </Badge>
+                  ))}
+                </div>
+                <a href="https://developers.facebook.com/docs/permissions" target="_blank" rel="noreferrer"
+                   className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground mt-3">
+                  About Meta permissions <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </>
+          )}
         </Card>
 
-        {/* Coming soon */}
         <div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Coming soon</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">

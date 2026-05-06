@@ -15,14 +15,16 @@ function index($m) {
         $b = json_in();
         $id = uuid();
         $status = !empty($b['scheduledAt']) ? 'scheduled' : (($b['status'] ?? 'draft'));
-        $pdo->prepare('INSERT INTO posts (id,user_id,title,caption_ig,caption_fb,media_url,format,platforms,status,scheduled_at)
-                       VALUES (?,?,?,?,?,?,?,?,?,?)')
+        $mediaUrls = isset($b['mediaUrls']) && is_array($b['mediaUrls']) ? json_encode(array_values($b['mediaUrls'])) : null;
+        $pdo->prepare('INSERT INTO posts (id,user_id,title,caption_ig,caption_fb,media_url,media_urls,format,platforms,status,scheduled_at)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?)')
             ->execute([
                 $id, $u['id'],
                 substr((string)($b['title'] ?? 'Untitled post'), 0, 255),
                 (string)($b['captionIg'] ?? ''),
                 (string)($b['captionFb'] ?? ''),
                 (string)($b['mediaUrl'] ?? ''),
+                $mediaUrls,
                 (string)($b['format'] ?? 'image'),
                 (string)($b['platforms'] ?? 'instagram,facebook'),
                 $status,

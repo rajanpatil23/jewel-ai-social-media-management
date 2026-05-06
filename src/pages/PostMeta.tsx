@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useGallery } from "@/lib/gallery";
 import { productImages } from "@/lib/mockData";
+import { createPost } from "@/lib/posts";
 import hero from "@/assets/hero-jewelry.jpg";
 
 const IG_LIMIT = 2200;
@@ -87,18 +88,36 @@ export default function PostMeta() {
 
   const platformsSelected = (instagram ? 1 : 0) + (facebook ? 1 : 0);
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!instagram && !facebook) return toast.error("Select at least one platform");
     if (instagram && igOver) return toast.error("Instagram caption exceeds 2,200 chars");
     if (instagram && igHashtagsOver) return toast.error("Instagram allows max 30 hashtags");
     if (facebook && fbOver) return toast.error("Facebook message exceeds limit");
     if (schedule && (!date || !time)) return toast.error("Pick date & time to schedule");
     setPosting(true); setPosted(false);
-    setTimeout(() => {
-      setPosting(false); setPosted(true);
-      const where = [instagram && "Instagram", facebook && "Facebook"].filter(Boolean).join(" & ");
-      toast.success(schedule ? `Scheduled for ${date} ${time} → ${where}` : `Published to ${where}`);
-    }, 1300);
+    try {
+      const platforms = [instagram && "instagram", facebook && "facebook"].filter(Boolean) as ("instagram"|"facebook")[];
+      const scheduledAt = schedule ? new Date(`${date}T${time}`).toISOString() : null;
+      const title = (igCaption || fbCaption).split("\n")[0].slice(0, 80) || "Untitled post";
+      await createPost({
+        title,
+        captionIg: igCaption,
+        captionFb: fbCaption,
+        mediaUrl: image,
+        format,
+        platforms,
+        scheduledAt,
+        status: schedule ? "scheduled" : "published",
+      });
+      setPosted(true);
+      const where = platforms.map(p => p === "instagram" ? "Instagram" : "Facebook").join(" & ");
+      toast.success(schedule ? `Scheduled for ${date} ${time} → ${where}` : `Queued for ${where}`);
+      if (schedule) setTimeout(() => navigate("/schedule"), 800);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to save post");
+    } finally {
+      setPosting(false);
+    }
   };
 
   const onUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

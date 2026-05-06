@@ -182,9 +182,9 @@ export default function Scheduler() {
 
           <Tabs value={view} onValueChange={(v) => setView(v as typeof view)} className="ml-auto">
             <TabsList className="h-9">
-              <TabsTrigger value="month" className="text-xs px-3">Month</TabsTrigger>
-              <TabsTrigger value="week" className="text-xs px-3">Week</TabsTrigger>
-              <TabsTrigger value="list" className="text-xs px-3">List</TabsTrigger>
+              <TabsTrigger value="month" className="text-xs px-2.5 sm:px-3">Month</TabsTrigger>
+              <TabsTrigger value="week" className="text-xs px-2.5 sm:px-3">Week</TabsTrigger>
+              <TabsTrigger value="list" className="text-xs px-2.5 sm:px-3">List</TabsTrigger>
             </TabsList>
           </Tabs>
 

@@ -51,7 +51,7 @@ const sectionTitle: Record<string, string> = {
   "/connections": "Connections",
 };
 
-function NavItems({ pathname, onPick }: { pathname: string; onPick?: () => void }) {
+function NavItems({ pathname, collapsed, onPick }: { pathname: string; collapsed?: boolean; onPick?: () => void }) {
   return (
     <nav className="flex flex-col gap-0.5">
       {nav.map((item) => {
@@ -62,18 +62,21 @@ function NavItems({ pathname, onPick }: { pathname: string; onPick?: () => void 
             key={item.to}
             to={item.to}
             onClick={onPick}
-            className={`group flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors ${
+            title={collapsed ? item.label : undefined}
+            className={`group flex items-center gap-2.5 rounded-md ${
+              collapsed ? "justify-center px-0 py-2" : "px-2.5 py-2"
+            } text-sm transition-colors ${
               active
                 ? "bg-secondary text-foreground font-medium"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
             }`}
           >
             <item.icon
-              className={`h-4 w-4 ${
+              className={`h-4 w-4 shrink-0 ${
                 active ? "text-[hsl(var(--primary-deep))]" : "text-muted-foreground/80"
               }`}
             />
-            <span>{item.label}</span>
+            {!collapsed && <span className="truncate">{item.label}</span>}
           </NavLink>
         );
       })}

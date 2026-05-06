@@ -59,6 +59,9 @@ try {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // Idempotent migration: add media_urls if missing on existing installs
+    try { $pdo->exec("ALTER TABLE posts ADD COLUMN media_urls JSON NULL AFTER media_url"); } catch (Throwable $e) {}
+
     echo "OK — tables created. Now DELETE install.php.";
 } catch (Throwable $e) {
     http_response_code(500);

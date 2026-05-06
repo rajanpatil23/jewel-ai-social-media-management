@@ -351,7 +351,7 @@ function ListView({ posts, onOpen }: { posts: ScheduledPost[]; onOpen: (id: stri
           {items.map(p => (
             <button key={p.id} onClick={() => onOpen(p.id)}
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/40 transition-colors text-left">
-              <img src={productImages[p.img]} alt="" className="h-10 w-10 rounded object-cover" />
+              <img src={(p as any).mediaUrl || productImages[p.img]} alt="" className="h-10 w-10 rounded object-cover" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{p.title}</p>
                 <p className="text-[11px] text-muted-foreground">{p.time} · {p.format}</p>
@@ -406,10 +406,10 @@ function Inspector({ post, onEdit, onDuplicate, onCancel, onPublishNow }: {
             {post.platforms.includes("facebook") && <TabsTrigger value="facebook" className="text-xs gap-1.5"><Facebook className="h-3.5 w-3.5" /> Facebook</TabsTrigger>}
           </TabsList>
           <TabsContent value="instagram" className="mt-3">
-            <IGPreview img={productImages[post.img]} caption={post.caption} />
+            <IGPreview img={(post as any).mediaUrl || productImages[post.img]} caption={post.caption} />
           </TabsContent>
           <TabsContent value="facebook" className="mt-3">
-            <FBPreview img={productImages[post.img]} caption={post.caption} />
+            <FBPreview img={(post as any).mediaUrl || productImages[post.img]} caption={post.caption} />
           </TabsContent>
         </Tabs>
 

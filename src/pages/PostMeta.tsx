@@ -124,6 +124,9 @@ export default function PostMeta() {
     if (instagram && igHashtagsOver) return toast.error("Instagram allows max 30 hashtags");
     if (facebook && fbOver) return toast.error("Facebook message exceeds limit");
     if (schedule && (!date || !time)) return toast.error("Pick date & time to schedule");
+    if (isCarousel && mediaUrls.length < 2) return toast.error("Carousel needs 2–10 images");
+    if (isCarousel && mediaUrls.length > 10) return toast.error("Carousel max is 10 images");
+    if (isReel && !videoUrl) return toast.error("Upload a video for the Reel");
     setPosting(true); setPosted(false);
     try {
       await createPost(buildPayload(schedule ? "scheduled" : "published"));
@@ -139,17 +142,50 @@ export default function PostMeta() {
   };
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    // Optimistic preview
-    setImage(URL.createObjectURL(file));
-    // Best-effort upload to backend so cron can publish a public URL
-    const r = await tryApi(() => api.upload<{ url: string }>("/upload", file));
-    if (r?.url) {
-      setImage(r.url);
-      toast.success("Uploaded");
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    e.target.value = "";
+
+    if (isReel) {
+      const f = files[0];
+      if (!f.type.startsWith("video/")) return toast.error("Reel needs a video file (.mp4)");
+      setVideoUrl(URL.createObjectURL(f));
+      const r = await tryApi(() => api.upload<{ url: string }>("/upload", f));
+      if (r?.url) { setVideoUrl(r.url); toast.success("Video uploaded"); }
+      return;
     }
+
+    if (isCarousel) {
+      const previews = files.map(f => URL.createObjectURL(f));
+      setMediaUrls(prev => [...prev, ...previews].slice(0, 10));
+      const uploaded: string[] = [];
+      for (const f of files) {
+        const r = await tryApi(() => api.upload<{ url: string }>("/upload", f));
+        if (r?.url) uploaded.push(r.url);
+      }
+      if (uploaded.length) {
+        setMediaUrls(prev => {
+          const filtered = prev.filter(u => !previews.includes(u));
+          return [...filtered, ...uploaded].slice(0, 10);
+        });
+        toast.success(`Uploaded ${uploaded.length}`);
+      }
+      return;
+    }
+
+    const file = files[0];
+    setImage(URL.createObjectURL(file));
+    const r = await tryApi(() => api.upload<{ url: string }>("/upload", file));
+    if (r?.url) { setImage(r.url); toast.success("Uploaded"); }
   };
+
+  const removeCarouselItem = (i: number) => setMediaUrls(prev => prev.filter((_, idx) => idx !== i));
+
+  // Reset carousel/video state when format changes
+  useEffect(() => {
+    if (!isCarousel) setMediaUrls([]);
+    if (!isReel) setVideoUrl("");
+  }, [format, isCarousel, isReel]);
 
   return (
     <AppLayout>

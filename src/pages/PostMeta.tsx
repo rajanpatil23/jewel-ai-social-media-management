@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { useGallery } from "@/lib/gallery";
 import { productImages } from "@/lib/mockData";
 import { createPost } from "@/lib/posts";
+import { useConnections } from "@/lib/connections";
 import hero from "@/assets/hero-jewelry.jpg";
 
 const IG_LIMIT = 2200;

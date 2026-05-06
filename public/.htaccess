@@ -3,6 +3,9 @@
   RewriteEngine On
   RewriteBase /
 
+  # Serve Meta validation pages as static HTML, not through the React app
+  RewriteRule ^data-deletion/?$ data-deletion/index.html [L]
+
   # Don't rewrite real files or directories
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d

@@ -87,9 +87,44 @@ export default function Scheduler() {
     next++;
   }
 
-  const goPrev = () => { if (month===0) { setMonth(11); setYear(y=>y-1); } else setMonth(m=>m-1); };
-  const goNext = () => { if (month===11) { setMonth(0); setYear(y=>y+1); } else setMonth(m=>m+1); };
-  const goToday = () => { const d = new Date(); setYear(d.getFullYear()); setMonth(d.getMonth()); };
+  // Week view cells
+  const weekCells = useMemo(() => {
+    const out: { day: number; iso: string; inMonth: boolean; date: Date }[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekAnchor);
+      d.setDate(weekAnchor.getDate() + i);
+      const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      out.push({ day: d.getDate(), iso, inMonth: d.getMonth() === month && d.getFullYear() === year, date: d });
+    }
+    return out;
+  }, [weekAnchor, month, year]);
+
+  const weekRangeLabel = useMemo(() => {
+    const s = weekCells[0]?.date, e = weekCells[6]?.date;
+    if (!s || !e) return "";
+    const fmt = (d: Date) => `${monthName[d.getMonth()].slice(0,3)} ${d.getDate()}`;
+    return s.getMonth() === e.getMonth()
+      ? `${fmt(s)} – ${e.getDate()}, ${e.getFullYear()}`
+      : `${fmt(s)} – ${fmt(e)}, ${e.getFullYear()}`;
+  }, [weekCells]);
+
+  const goPrev = () => {
+    if (view === "week") {
+      const d = new Date(weekAnchor); d.setDate(d.getDate() - 7); setWeekAnchor(d);
+      setMonth(d.getMonth()); setYear(d.getFullYear());
+    } else if (month===0) { setMonth(11); setYear(y=>y-1); } else setMonth(m=>m-1);
+  };
+  const goNext = () => {
+    if (view === "week") {
+      const d = new Date(weekAnchor); d.setDate(d.getDate() + 7); setWeekAnchor(d);
+      setMonth(d.getMonth()); setYear(d.getFullYear());
+    } else if (month===11) { setMonth(0); setYear(y=>y+1); } else setMonth(m=>m+1);
+  };
+  const goToday = () => {
+    const d = new Date();
+    setYear(d.getFullYear()); setMonth(d.getMonth());
+    const w = new Date(d); w.setDate(d.getDate() - d.getDay()); setWeekAnchor(w);
+  };
   const todayIso = new Date().toISOString().slice(0,10);
 
   const activePlatformCount = Object.values(platformFilter).filter(Boolean).length;

@@ -123,6 +123,7 @@ export default function ImageGen() {
       setResults(next);
       setGallery((g) => [...next, ...g].slice(0, 24));
       setHistory((h) => [{ src: next[0].src, prompt: p }, ...h].slice(0, 8));
+      addToGallery(next);
       setLoading(false);
       toast.success(`${count[0]} creative${count[0] > 1 ? "s" : ""} generated`);
     }, 1400);

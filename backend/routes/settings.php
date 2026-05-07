@@ -69,7 +69,8 @@ function resolve_user_ai(string $user_id): array {
     $row = $q->fetch();
     $provider = $row['ai_provider'] ?? ($cfg['ai_provider'] ?? 'gemini');
     $model    = $row['ai_model']    ?? ($cfg['ai_model']    ?? 'gemini-2.5-flash-image');
-    $apiKey   = !empty($row['ai_api_key']) ? $row['ai_api_key'] : ($cfg['ai_api_key'] ?? '');
+    $apiKey   = trim((string)(!empty($row['ai_api_key']) ? $row['ai_api_key'] : ($cfg['ai_api_key'] ?? '')));
+    if ($apiKey === '' || str_starts_with($apiKey, 'CHANGE_ME')) $apiKey = '';
     $detected = detect_ai_provider_from_key((string)$apiKey);
     if ($detected) $provider = $detected;
 

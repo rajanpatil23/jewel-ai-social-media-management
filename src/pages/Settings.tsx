@@ -151,6 +151,10 @@ export default function Settings() {
                 {aiSaving && <Loader2 className="h-3 w-3 animate-spin mr-1.5" />}
                 Save settings
               </Button>
+              <Button variant="outline" onClick={onTestAi} disabled={aiTesting}>
+                {aiTesting ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <FlaskConical className="h-3 w-3 mr-1.5" />}
+                Test connection
+              </Button>
               {ai?.has_own_key && (
                 <Button variant="outline" onClick={onClearKey} disabled={aiSaving}>
                   Remove my key (use platform default)

@@ -140,14 +140,28 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               Account
             </p>
             <nav className="flex flex-col gap-0.5">
-              <button className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+              <NavLink
+                to="/settings"
+                className={({ isActive }) =>
+                  `flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+                    isActive
+                      ? "bg-secondary text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                  }`
+                }
+              >
                 <Settings className="h-4 w-4" />
                 Settings
-              </button>
-              <button className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+              </NavLink>
+              <a
+                href="https://docs.lovable.dev"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+              >
                 <HelpCircle className="h-4 w-4" />
-                Help & docs
-              </button>
+                Help &amp; docs
+              </a>
             </nav>
           </div>
         )}

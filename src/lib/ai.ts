@@ -41,3 +41,7 @@ export async function saveAiSettings(p: {
 }) {
   return await api.post("/settings/ai", p);
 }
+
+export async function testAiConnection() {
+  return await api.post<{ ok: boolean; sample?: string; provider?: string; model?: string; error?: string; detail?: string }>("/ai/test");
+}

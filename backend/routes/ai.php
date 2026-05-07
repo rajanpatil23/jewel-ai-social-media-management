@@ -1,6 +1,6 @@
 <?php
 // Server-side AI image-generation proxy.
-// - Multimodal (text + reference image) via Lovable AI Gateway / Nano Banana
+// - Multimodal (text + reference image) via Gemini directly or Lovable AI Gateway / Nano Banana
 // - BYOK: uses the user's own API key if configured, else platform default
 // - Tuned prompts for jewelry: identity preservation + scene styling
 
@@ -94,6 +94,11 @@ function generate($m) {
             ], 400);
         }
 
+        if ($provider === 'gemini') {
+            $images = call_gemini_image_multi($finalPrompt, $refImage, $count, $apiKey, $model);
+            json_out(['images' => $images, 'using_own_key' => $ai['using_own'], 'provider' => 'gemini', 'model' => $model]);
+        }
+
         if ($provider === 'lovable') {
             $images = call_lovable_ai_multi($finalPrompt, $refImage, $count, $apiKey, $model);
             json_out(['images' => $images, 'using_own_key' => $ai['using_own'], 'provider' => 'lovable', 'model' => $model]);
@@ -124,6 +129,13 @@ function ai_test($m) {
     if (empty($ai['api_key'])) json_out(['ok' => false, 'error' => 'no_api_key'], 400);
 
     try {
+        if ($ai['provider'] === 'gemini') {
+            $images = call_gemini_image_multi(
+                'A tiny gold ring on a white background, product photography',
+                null, 1, $ai['api_key'], $ai['model']
+            );
+            json_out(['ok' => true, 'sample' => $images[0] ?? null, 'provider' => 'gemini', 'model' => $ai['model']]);
+        }
         if ($ai['provider'] === 'lovable') {
             $images = call_lovable_ai_multi(
                 'A tiny gold ring on a white background, product photography',

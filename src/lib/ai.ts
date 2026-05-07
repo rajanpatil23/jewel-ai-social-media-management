@@ -23,7 +23,7 @@ export async function uploadReference(file: File): Promise<string> {
 }
 
 export type AiSettings = {
-  provider: "lovable" | "openai";
+  provider: "gemini" | "lovable" | "openai";
   model: string;
   has_own_key: boolean;
   using_default: boolean;
@@ -34,7 +34,7 @@ export async function getAiSettings(): Promise<AiSettings | null> {
 }
 
 export async function saveAiSettings(p: {
-  provider: "lovable" | "openai";
+  provider: "gemini" | "lovable" | "openai";
   model: string;
   api_key?: string;
   clear_key?: boolean;

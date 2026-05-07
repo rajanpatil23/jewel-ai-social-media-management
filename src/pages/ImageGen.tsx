@@ -158,11 +158,13 @@ export default function ImageGen() {
       setGallery((g) => [...items, ...g].slice(0, 24));
       setHistory((h) => [{ src: items[0]?.src || "", prompt: p }, ...h].slice(0, 8));
       addToGallery(items);
-      toast.success(
-        res.mock
-          ? "Demo images shown — add your AI key in Settings for real generation"
-          : `${items.length} creative${items.length > 1 ? "s" : ""} generated`
-      );
+      if (res.mock && (res as any).fallback) {
+        toast.error(`AI failed: ${(res as any).detail || "server error"} — showing demo images`);
+      } else if (res.mock) {
+        toast.message("Demo images shown — add your AI key in Settings for real generation");
+      } else {
+        toast.success(`${items.length} creative${items.length > 1 ? "s" : ""} generated`);
+      }
     } catch (e) {
       const msg = e instanceof ApiError ? (e.data?.detail || e.message) : "Generation failed";
       // Preview mode (no PHP): fall back to sample images so UI keeps working

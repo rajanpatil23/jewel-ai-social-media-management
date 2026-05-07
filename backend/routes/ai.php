@@ -75,15 +75,23 @@ function generate($m) {
     $apiKey   = $ai['api_key'];
     $model    = $ai['model'];
 
+    $mockImages = function(int $n) {
+        $out = [];
+        for ($i = 0; $i < $n; $i++) {
+            $seed = bin2hex(random_bytes(4));
+            $out[] = "https://picsum.photos/seed/$seed/1024/1024";
+        }
+        return $out;
+    };
+
     try {
         if (empty($apiKey)) {
-            // No key anywhere → mock fallback so the app still demos cleanly
-            $images = [];
-            for ($i = 0; $i < $count; $i++) {
-                $seed = bin2hex(random_bytes(4));
-                $images[] = "https://picsum.photos/seed/$seed/1024/1024";
-            }
-            json_out(['images' => $images, 'mock' => true, 'using_own_key' => false]);
+            json_out([
+                'images'        => $mockImages($count),
+                'mock'          => true,
+                'using_own_key' => false,
+                'reason'        => 'no_api_key_configured',
+            ]);
         }
 
         if ($provider === 'lovable') {
@@ -92,14 +100,26 @@ function generate($m) {
         }
 
         if ($provider === 'openai') {
-            // OpenAI image API doesn't take a reference image in the same way — fall back to text-only.
             $images = call_openai_image($finalPrompt, $count, ['ai_api_key' => $apiKey, 'ai_model' => $model]);
             json_out(['images' => $images, 'using_own_key' => $ai['using_own']]);
         }
 
-        json_out(['error' => 'unknown_provider'], 500);
+        json_out([
+            'images' => $mockImages($count), 'mock' => true,
+            'reason' => 'unknown_provider:' . $provider,
+        ]);
     } catch (Throwable $e) {
-        json_out(['error' => 'ai_failed', 'detail' => $e->getMessage()], 502);
+        // Never 502 the client — return mock images + the real reason so the
+        // UI stays functional and you can see what went wrong on the server.
+        error_log('[ai/generate] ' . $e->getMessage());
+        json_out([
+            'images'        => $mockImages($count),
+            'mock'          => true,
+            'fallback'      => true,
+            'using_own_key' => $ai['using_own'] ?? false,
+            'error'         => 'ai_failed',
+            'detail'        => $e->getMessage(),
+        ]);
     }
 }
 

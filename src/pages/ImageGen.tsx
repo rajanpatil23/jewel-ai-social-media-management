@@ -158,22 +158,19 @@ export default function ImageGen() {
       setGallery((g) => [...items, ...g].slice(0, 24));
       setHistory((h) => [{ src: items[0]?.src || "", prompt: p }, ...h].slice(0, 8));
       addToGallery(items);
-      if (res.mock && (res as any).fallback) {
-        toast.error(`AI failed: ${(res as any).detail || "server error"} — showing demo images`);
-      } else if (res.mock) {
-        toast.message("Demo images shown — add your AI key in Settings for real generation");
-      } else {
-        toast.success(`${items.length} creative${items.length > 1 ? "s" : ""} generated`);
-      }
+      toast.success(`${items.length} creative${items.length > 1 ? "s" : ""} generated`);
     } catch (e) {
-      const msg = e instanceof ApiError ? (e.data?.detail || e.message) : "Generation failed";
-      // Preview mode (no PHP): fall back to sample images so UI keeps working
+      const apiErr = e instanceof ApiError ? e : null;
+      const msg = apiErr ? (apiErr.data?.detail || apiErr.data?.error || apiErr.message) : "Generation failed";
+      // No backend at all (Lovable preview) → demo samples so UI is testable
       if (e instanceof TypeError) {
         const next = [...SAMPLES].sort(() => Math.random() - 0.5).slice(0, count[0]);
         setResults(next);
         setGallery((g) => [...next, ...g].slice(0, 24));
         addToGallery(next);
         toast.success("Preview mode — showing sample images");
+      } else if (apiErr?.data?.error === "no_api_key") {
+        toast.error("No AI key configured — open Settings → AI & API Key");
       } else {
         toast.error(msg);
       }

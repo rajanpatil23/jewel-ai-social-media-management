@@ -25,6 +25,8 @@ import {
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 import { addToGallery } from "@/lib/gallery";
+import { generateImages, uploadReference } from "@/lib/ai";
+import { ApiError } from "@/lib/api";
 
 import ring from "@/assets/product-ring.jpg";
 import necklace from "@/assets/product-necklace.jpg";

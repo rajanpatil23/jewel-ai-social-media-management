@@ -13,9 +13,10 @@ function ai_settings($m) {
         $q->execute([$u['id']]);
         $row = $q->fetch();
         $cfg = cfg();
+        $resolved = resolve_user_ai($u['id']);
         json_out([
-            'provider'      => $row['ai_provider'] ?? ($cfg['ai_provider'] ?? 'lovable'),
-            'model'         => $row['ai_model']    ?? ($cfg['ai_model']    ?? 'google/gemini-2.5-flash-image'),
+            'provider'      => $resolved['provider'] ?? ($row['ai_provider'] ?? ($cfg['ai_provider'] ?? 'gemini')),
+            'model'         => $resolved['model']    ?? ($row['ai_model']    ?? ($cfg['ai_model']    ?? 'gemini-2.5-flash-image')),
             'has_own_key'   => !empty($row['ai_api_key']),
             'using_default' => empty($row['ai_api_key']),
         ]);
@@ -23,13 +24,18 @@ function ai_settings($m) {
 
     if ($method === 'POST') {
         $b = json_in();
-        $provider = (string)($b['provider'] ?? 'lovable');
-        $model    = trim((string)($b['model'] ?? 'google/gemini-2.5-flash-image'));
+        $provider = (string)($b['provider'] ?? 'gemini');
+        $model    = trim((string)($b['model'] ?? 'gemini-2.5-flash-image'));
         $key      = trim((string)($b['api_key'] ?? ''));
         $clear    = !empty($b['clear_key']);
 
-        if (!in_array($provider, ['lovable', 'openai'], true)) json_out(['error' => 'bad_provider'], 400);
+        if (!in_array($provider, ['gemini', 'lovable', 'openai'], true)) json_out(['error' => 'bad_provider'], 400);
         if (mb_strlen($model) > 120) json_out(['error' => 'bad_model'], 400);
+        if ($key !== '') {
+            $detected = detect_ai_provider_from_key($key);
+            if ($detected) $provider = $detected;
+            $model = normalize_model_for_provider($provider, $model);
+        }
 
         // Upsert
         $exists = $pdo->prepare('SELECT 1 FROM user_settings WHERE user_id = ?');

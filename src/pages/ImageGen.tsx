@@ -407,10 +407,11 @@ export default function ImageGen() {
                         <Upload className="h-5 w-5" />
                       </button>
                     )}
-                    <input ref={fileRef} type="file" accept="image/*" hidden onChange={onUploadRef} />
                   </CollapsibleContent>
                 </Collapsible>
               </Card>
+              {/* File input lives OUTSIDE the collapsible so the right-panel "Upload your product image" button still works when the left card is collapsed */}
+              <input ref={fileRef} type="file" accept="image/*" hidden onChange={onUploadRef} />
 
               {/* RIGHT: Canvas area — static, no scroll */}
               <div className="flex flex-col min-w-0 h-full">

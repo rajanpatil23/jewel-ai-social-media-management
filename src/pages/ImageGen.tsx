@@ -119,6 +119,8 @@ export default function ImageGen() {
   const [enhancing, setEnhancing] = useState(false);
   const [results, setResults] = useState<GenItem[]>([]);
   const [referenceImg, setReferenceImg] = useState<string | null>(null);
+  const [referenceUrl, setReferenceUrl] = useState<string | null>(null); // backend URL after upload
+  const [sceneId, setSceneId] = useState<string | null>(null);
   const [collections, setCollections] = useState<GenItem[]>([]);
   const [gallery, setGallery] = useState<GenItem[]>(SAMPLES);
   const [history, setHistory] = useState<{ src: string; prompt: string }[]>(
@@ -135,19 +137,47 @@ export default function ImageGen() {
 
   const navigate = useNavigate();
 
-  const generate = (overridePrompt?: string) => {
+  const generate = async (overridePrompt?: string, overrideScene?: string | null) => {
     const p = overridePrompt ?? prompt;
-    if (!p.trim()) return;
+    const scene = overrideScene !== undefined ? overrideScene : sceneId;
+    if (!p.trim() && !referenceUrl && !referenceImg) return;
     setLoading(true);
-    setTimeout(() => {
-      const next = [...SAMPLES].sort(() => Math.random() - 0.5).slice(0, count[0]);
-      setResults(next);
-      setGallery((g) => [...next, ...g].slice(0, 24));
-      setHistory((h) => [{ src: next[0].src, prompt: p }, ...h].slice(0, 8));
-      addToGallery(next);
+    try {
+      const res = await generateImages({
+        prompt: p,
+        count: count[0],
+        ratio,
+        scene,
+        reference_image: referenceUrl || referenceImg, // URL preferred, data URI fallback
+      });
+      const items: GenItem[] = res.images.map((src, i) => ({
+        src,
+        label: scene ? `${STYLES.find(s=>s.id===style)?.label || "Generated"} · ${scene}` : (p.slice(0, 60) || "Generated"),
+      }));
+      setResults(items);
+      setGallery((g) => [...items, ...g].slice(0, 24));
+      setHistory((h) => [{ src: items[0]?.src || "", prompt: p }, ...h].slice(0, 8));
+      addToGallery(items);
+      toast.success(
+        res.mock
+          ? "Demo images shown — add your AI key in Settings for real generation"
+          : `${items.length} creative${items.length > 1 ? "s" : ""} generated`
+      );
+    } catch (e) {
+      const msg = e instanceof ApiError ? (e.data?.detail || e.message) : "Generation failed";
+      // Preview mode (no PHP): fall back to sample images so UI keeps working
+      if (e instanceof TypeError) {
+        const next = [...SAMPLES].sort(() => Math.random() - 0.5).slice(0, count[0]);
+        setResults(next);
+        setGallery((g) => [...next, ...g].slice(0, 24));
+        addToGallery(next);
+        toast.success("Preview mode — showing sample images");
+      } else {
+        toast.error(msg);
+      }
+    } finally {
       setLoading(false);
-      toast.success(`${count[0]} creative${count[0] > 1 ? "s" : ""} generated`);
-    }, 1400);
+    }
   };
 
   const enhancePrompt = () => {
@@ -170,12 +200,23 @@ export default function ImageGen() {
     }, 1100);
   };
 
-  const onUploadRef = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onUploadRef = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+    // Show local preview immediately
     const reader = new FileReader();
-    reader.onload = () => { setReferenceImg(reader.result as string); toast.success("Reference image added"); };
+    reader.onload = () => setReferenceImg(reader.result as string);
     reader.readAsDataURL(f);
+    // Upload to backend so we can pass a URL (much smaller payload to AI)
+    try {
+      const url = await uploadReference(f);
+      setReferenceUrl(url);
+      toast.success("Reference image uploaded");
+    } catch {
+      // Preview mode — keep the data URI
+      setReferenceUrl(null);
+      toast.success("Reference image added");
+    }
   };
 
   const onUploadEdit = (e: React.ChangeEvent<HTMLInputElement>) => {

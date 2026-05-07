@@ -47,6 +47,7 @@ $routes = [
     '#^/analytics/summary$#'               => 'routes/analytics.php:summary',
 
     '#^/ai/generate$#'                     => 'routes/ai.php:generate',
+    '#^/ai/test$#'                         => 'routes/ai.php:ai_test',
     '#^/settings/ai$#'                     => 'routes/settings.php:ai_settings',
 
     '#^/meta/data-deletion$#'              => 'routes/meta_deletion.php:meta_data_deletion',

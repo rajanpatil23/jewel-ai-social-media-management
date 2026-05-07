@@ -86,40 +86,61 @@ function generate($m) {
 
     try {
         if (empty($apiKey)) {
+            // Hard error — do NOT silently mock. Tell the UI to direct the user to Settings.
             json_out([
-                'images'        => $mockImages($count),
-                'mock'          => true,
-                'using_own_key' => false,
-                'reason'        => 'no_api_key_configured',
-            ]);
+                'error'   => 'no_api_key',
+                'detail'  => 'No AI API key configured. Open Settings → AI & API Key and paste your key, '
+                           . 'or set ai_api_key in backend/config.php as the platform default.',
+            ], 400);
         }
 
         if ($provider === 'lovable') {
             $images = call_lovable_ai_multi($finalPrompt, $refImage, $count, $apiKey, $model);
-            json_out(['images' => $images, 'using_own_key' => $ai['using_own']]);
+            json_out(['images' => $images, 'using_own_key' => $ai['using_own'], 'provider' => 'lovable', 'model' => $model]);
         }
 
         if ($provider === 'openai') {
             $images = call_openai_image($finalPrompt, $count, ['ai_api_key' => $apiKey, 'ai_model' => $model]);
-            json_out(['images' => $images, 'using_own_key' => $ai['using_own']]);
+            json_out(['images' => $images, 'using_own_key' => $ai['using_own'], 'provider' => 'openai', 'model' => $model]);
         }
 
-        json_out([
-            'images' => $mockImages($count), 'mock' => true,
-            'reason' => 'unknown_provider:' . $provider,
-        ]);
+        json_out(['error' => 'unknown_provider', 'detail' => $provider], 400);
     } catch (Throwable $e) {
-        // Never 502 the client — return mock images + the real reason so the
-        // UI stays functional and you can see what went wrong on the server.
         error_log('[ai/generate] ' . $e->getMessage());
+        // Real error — surface it. The frontend will show a toast with this detail.
         json_out([
-            'images'        => $mockImages($count),
-            'mock'          => true,
-            'fallback'      => true,
-            'using_own_key' => $ai['using_own'] ?? false,
             'error'         => 'ai_failed',
             'detail'        => $e->getMessage(),
-        ]);
+            'using_own_key' => $ai['using_own'] ?? false,
+        ], 502);
+    }
+}
+
+// Lightweight credential test — used by Settings "Test connection" button.
+function ai_test($m) {
+    $u = require_auth();
+    require_method('POST');
+    $ai = resolve_user_ai($u['id']);
+    if (empty($ai['api_key'])) json_out(['ok' => false, 'error' => 'no_api_key'], 400);
+
+    try {
+        if ($ai['provider'] === 'lovable') {
+            $images = call_lovable_ai_multi(
+                'A tiny gold ring on a white background, product photography',
+                null, 1, $ai['api_key'], $ai['model']
+            );
+            json_out(['ok' => true, 'sample' => $images[0] ?? null, 'provider' => 'lovable', 'model' => $ai['model']]);
+        }
+        if ($ai['provider'] === 'openai') {
+            $images = call_openai_image(
+                'A tiny gold ring on a white background, product photography',
+                1, ['ai_api_key' => $ai['api_key'], 'ai_model' => $ai['model']]
+            );
+            json_out(['ok' => true, 'sample' => $images[0] ?? null, 'provider' => 'openai', 'model' => $ai['model']]);
+        }
+        json_out(['ok' => false, 'error' => 'unknown_provider'], 400);
+    } catch (Throwable $e) {
+        json_out(['ok' => false, 'error' => 'ai_failed', 'detail' => $e->getMessage()], 502);
     }
 }
 

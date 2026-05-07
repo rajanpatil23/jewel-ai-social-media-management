@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,15 @@ import { toast } from "sonner";
 import advoraLogo from "@/assets/advora-logo.png";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, user, previewMode } = useAuth();
   const nav = useNavigate();
   const loc = useLocation() as any;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // If we're already authed (real session OR Lovable preview mode) → skip the login page
+  if (user) return <Navigate to={loc.state?.from || "/dashboard"} replace />;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

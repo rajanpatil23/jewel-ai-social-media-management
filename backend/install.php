@@ -65,9 +65,9 @@ try {
     // Per-user settings (BYOK API keys + preferences)
     $pdo->exec("CREATE TABLE IF NOT EXISTS user_settings (
         user_id     CHAR(36) PRIMARY KEY,
-        ai_provider VARCHAR(40) NOT NULL DEFAULT 'lovable',
+        ai_provider VARCHAR(40) NOT NULL DEFAULT 'gemini',
         ai_api_key  TEXT,
-        ai_model    VARCHAR(120) NOT NULL DEFAULT 'google/gemini-2.5-flash-image',
+        ai_model    VARCHAR(120) NOT NULL DEFAULT 'gemini-2.5-flash-image',
         updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");

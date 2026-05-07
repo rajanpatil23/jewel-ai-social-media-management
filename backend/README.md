@@ -40,9 +40,13 @@ When `meta_app_id` is empty, `/connections/meta/connect` falls back to a
 ## AI image generation
 
 `config.php` → `ai_provider`:
-- `mock` → returns picsum placeholders (works with no key)
-- `lovable` → uses Lovable AI Gateway (`ai_api_key` + `ai_model`)
-- `openai` → uses OpenAI Images
+- `gemini` → uses Google Gemini API keys directly (`AIza...`)
+- `lovable` → uses Lovable AI Gateway keys (`sk_...`)
+- `openai` → uses OpenAI Images keys (`sk-...`)
+
+Per-user keys saved in Settings are used first. If no user key is saved, the
+backend falls back to `config.php`, then environment variables like
+`GEMINI_API_KEY`, `GOOGLE_API_KEY`, `LOVABLE_API_KEY`, or `OPENAI_API_KEY`.
 
 ## API surface
 

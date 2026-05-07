@@ -25,13 +25,13 @@ return [
     'uploads_url' => '/api/uploads',
 
     // ---- AI image generation ----
-    // Option A: Lovable AI Gateway (recommended — supports image gen)
-    //   https://ai.gateway.lovable.dev/v1/...
-    //   Get key from your Lovable workspace → Settings → AI.
-    // Option B: OpenAI / Stability / Replicate — adapt routes/ai.php.
-    'ai_provider'  => 'lovable', // 'lovable' | 'openai' | 'mock'
-    'ai_api_key'   => 'CHANGE_ME_or_leave_blank_for_mock',
-    'ai_model'     => 'google/gemini-2.5-flash-image-preview',
+    // 'gemini' uses Google Gemini API keys (AIza...) directly.
+    // 'lovable' uses Lovable AI Gateway keys (sk_...).
+    // 'openai' uses OpenAI image keys (sk-...).
+    // If blank, routes/settings.php also checks GEMINI_API_KEY / GOOGLE_API_KEY / LOVABLE_API_KEY / OPENAI_API_KEY env vars.
+    'ai_provider'  => 'gemini', // 'gemini' | 'lovable' | 'openai'
+    'ai_api_key'   => '',
+    'ai_model'     => 'gemini-2.5-flash-image',
 
     // ---- Meta (Facebook + Instagram) ----
     // Create a Meta App at https://developers.facebook.com/

@@ -1,6 +1,6 @@
 <?php
 // Server-side AI image-generation proxy.
-// - Multimodal (text + reference image) via Lovable AI Gateway / Nano Banana
+// - Multimodal (text + reference image) via Gemini directly or Lovable AI Gateway / Nano Banana
 // - BYOK: uses the user's own API key if configured, else platform default
 // - Tuned prompts for jewelry: identity preservation + scene styling
 
@@ -94,6 +94,11 @@ function generate($m) {
             ], 400);
         }
 
+        if ($provider === 'gemini') {
+            $images = call_gemini_image_multi($finalPrompt, $refImage, $count, $apiKey, $model);
+            json_out(['images' => $images, 'using_own_key' => $ai['using_own'], 'provider' => 'gemini', 'model' => $model]);
+        }
+
         if ($provider === 'lovable') {
             $images = call_lovable_ai_multi($finalPrompt, $refImage, $count, $apiKey, $model);
             json_out(['images' => $images, 'using_own_key' => $ai['using_own'], 'provider' => 'lovable', 'model' => $model]);
@@ -124,6 +129,13 @@ function ai_test($m) {
     if (empty($ai['api_key'])) json_out(['ok' => false, 'error' => 'no_api_key'], 400);
 
     try {
+        if ($ai['provider'] === 'gemini') {
+            $images = call_gemini_image_multi(
+                'A tiny gold ring on a white background, product photography',
+                null, 1, $ai['api_key'], $ai['model']
+            );
+            json_out(['ok' => true, 'sample' => $images[0] ?? null, 'provider' => 'gemini', 'model' => $ai['model']]);
+        }
         if ($ai['provider'] === 'lovable') {
             $images = call_lovable_ai_multi(
                 'A tiny gold ring on a white background, product photography',
@@ -211,6 +223,59 @@ function call_lovable_ai_multi(string $prompt, ?string $refImage, int $count, st
 
     if (empty($images)) throw new Exception($lastErr ?: 'no_images_returned');
     return $images;
+}
+
+// Direct Gemini API path for customer Google API keys (AIza...).
+function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, string $apiKey, string $model): array {
+    $model = preg_replace('#^google/#', '', $model) ?: 'gemini-2.5-flash-image';
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent?key=' . rawurlencode($apiKey);
+    $parts = [['text' => $prompt]];
+    if ($refImage) $parts[] = gemini_image_part($refImage);
+    $body = json_encode([
+        'contents' => [['role' => 'user', 'parts' => $parts]],
+        'generationConfig' => ['responseModalities' => ['TEXT', 'IMAGE']],
+    ]);
+
+    $images = [];
+    $lastErr = null;
+    for ($i = 0; $i < $count; $i++) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_TIMEOUT        => 120,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS     => $body,
+        ]);
+        $resp = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($code >= 400 || !$resp) { $lastErr = "gemini $code: " . substr((string)$resp, 0, 500); continue; }
+        $data = json_decode($resp, true);
+        foreach (($data['candidates'][0]['content']['parts'] ?? []) as $part) {
+            $inline = $part['inlineData'] ?? $part['inline_data'] ?? null;
+            if (!empty($inline['data'])) $images[] = 'data:' . ($inline['mimeType'] ?? $inline['mime_type'] ?? 'image/png') . ';base64,' . $inline['data'];
+        }
+    }
+    if (empty($images)) throw new Exception($lastErr ?: 'gemini_no_images_returned');
+    return array_slice($images, 0, $count);
+}
+
+function gemini_image_part(string $src): array {
+    if (preg_match('#^data:(.*?);base64,(.*)$#', $src, $m)) {
+        return ['inlineData' => ['mimeType' => $m[1] ?: 'image/png', 'data' => $m[2]]];
+    }
+    $bytes = null; $mime = null;
+    $uploadsUrl = cfg()['uploads_url'] ?? '/api/uploads';
+    if (str_starts_with($src, $uploadsUrl . '/')) {
+        $path = cfg()['uploads_dir'] . substr($src, strlen($uploadsUrl));
+        if (is_file($path)) { $bytes = file_get_contents($path); $mime = mime_content_type($path) ?: 'image/png'; }
+    } elseif (preg_match('#^https?://#', $src)) {
+        $bytes = @file_get_contents($src);
+        $mime = 'image/png';
+    }
+    if (!$bytes) throw new Exception('reference_image_unreadable');
+    return ['inlineData' => ['mimeType' => $mime ?: 'image/png', 'data' => base64_encode($bytes)]];
 }
 
 function call_openai_image(string $prompt, int $count, array $cfg): array {

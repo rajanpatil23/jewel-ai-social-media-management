@@ -62,6 +62,16 @@ try {
     // Idempotent migration: add media_urls if missing on existing installs
     try { $pdo->exec("ALTER TABLE posts ADD COLUMN media_urls JSON NULL AFTER media_url"); } catch (Throwable $e) {}
 
+    // Per-user settings (BYOK API keys + preferences)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS user_settings (
+        user_id     CHAR(36) PRIMARY KEY,
+        ai_provider VARCHAR(40) NOT NULL DEFAULT 'lovable',
+        ai_api_key  TEXT,
+        ai_model    VARCHAR(120) NOT NULL DEFAULT 'google/gemini-2.5-flash-image',
+        updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     // OAuth state store — survives cross-domain popup flows where PHP session cookie is lost.
     $pdo->exec("CREATE TABLE IF NOT EXISTS oauth_states (
         state       CHAR(64) PRIMARY KEY,

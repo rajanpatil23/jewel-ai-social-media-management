@@ -25,6 +25,8 @@ import {
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 import { addToGallery } from "@/lib/gallery";
+import { generateImages, uploadReference } from "@/lib/ai";
+import { ApiError } from "@/lib/api";
 
 import ring from "@/assets/product-ring.jpg";
 import necklace from "@/assets/product-necklace.jpg";
@@ -117,6 +119,8 @@ export default function ImageGen() {
   const [enhancing, setEnhancing] = useState(false);
   const [results, setResults] = useState<GenItem[]>([]);
   const [referenceImg, setReferenceImg] = useState<string | null>(null);
+  const [referenceUrl, setReferenceUrl] = useState<string | null>(null); // backend URL after upload
+  const [sceneId, setSceneId] = useState<string | null>(null);
   const [collections, setCollections] = useState<GenItem[]>([]);
   const [gallery, setGallery] = useState<GenItem[]>(SAMPLES);
   const [history, setHistory] = useState<{ src: string; prompt: string }[]>(
@@ -133,19 +137,47 @@ export default function ImageGen() {
 
   const navigate = useNavigate();
 
-  const generate = (overridePrompt?: string) => {
+  const generate = async (overridePrompt?: string, overrideScene?: string | null) => {
     const p = overridePrompt ?? prompt;
-    if (!p.trim()) return;
+    const scene = overrideScene !== undefined ? overrideScene : sceneId;
+    if (!p.trim() && !referenceUrl && !referenceImg) return;
     setLoading(true);
-    setTimeout(() => {
-      const next = [...SAMPLES].sort(() => Math.random() - 0.5).slice(0, count[0]);
-      setResults(next);
-      setGallery((g) => [...next, ...g].slice(0, 24));
-      setHistory((h) => [{ src: next[0].src, prompt: p }, ...h].slice(0, 8));
-      addToGallery(next);
+    try {
+      const res = await generateImages({
+        prompt: p,
+        count: count[0],
+        ratio,
+        scene,
+        reference_image: referenceUrl || referenceImg, // URL preferred, data URI fallback
+      });
+      const items: GenItem[] = res.images.map((src, i) => ({
+        src,
+        label: scene ? `${STYLES.find(s=>s.id===style)?.label || "Generated"} · ${scene}` : (p.slice(0, 60) || "Generated"),
+      }));
+      setResults(items);
+      setGallery((g) => [...items, ...g].slice(0, 24));
+      setHistory((h) => [{ src: items[0]?.src || "", prompt: p }, ...h].slice(0, 8));
+      addToGallery(items);
+      toast.success(
+        res.mock
+          ? "Demo images shown — add your AI key in Settings for real generation"
+          : `${items.length} creative${items.length > 1 ? "s" : ""} generated`
+      );
+    } catch (e) {
+      const msg = e instanceof ApiError ? (e.data?.detail || e.message) : "Generation failed";
+      // Preview mode (no PHP): fall back to sample images so UI keeps working
+      if (e instanceof TypeError) {
+        const next = [...SAMPLES].sort(() => Math.random() - 0.5).slice(0, count[0]);
+        setResults(next);
+        setGallery((g) => [...next, ...g].slice(0, 24));
+        addToGallery(next);
+        toast.success("Preview mode — showing sample images");
+      } else {
+        toast.error(msg);
+      }
+    } finally {
       setLoading(false);
-      toast.success(`${count[0]} creative${count[0] > 1 ? "s" : ""} generated`);
-    }, 1400);
+    }
   };
 
   const enhancePrompt = () => {
@@ -168,12 +200,23 @@ export default function ImageGen() {
     }, 1100);
   };
 
-  const onUploadRef = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onUploadRef = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+    // Show local preview immediately
     const reader = new FileReader();
-    reader.onload = () => { setReferenceImg(reader.result as string); toast.success("Reference image added"); };
+    reader.onload = () => setReferenceImg(reader.result as string);
     reader.readAsDataURL(f);
+    // Upload to backend so we can pass a URL (much smaller payload to AI)
+    try {
+      const url = await uploadReference(f);
+      setReferenceUrl(url);
+      toast.success("Reference image uploaded");
+    } catch {
+      // Preview mode — keep the data URI
+      setReferenceUrl(null);
+      toast.success("Reference image added");
+    }
   };
 
   const onUploadEdit = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -350,7 +393,7 @@ export default function ImageGen() {
                     {referenceImg ? (
                       <div className="relative rounded-lg overflow-hidden border border-border/70">
                         <img src={referenceImg} alt="Reference" className="w-full h-32 object-cover" />
-                        <button onClick={() => setReferenceImg(null)} className="absolute top-1.5 right-1.5 h-6 w-6 rounded-md bg-black/60 text-white flex items-center justify-center hover:bg-black/80">
+                        <button onClick={() => (setReferenceImg(null), setReferenceUrl(null))} className="absolute top-1.5 right-1.5 h-6 w-6 rounded-md bg-black/60 text-white flex items-center justify-center hover:bg-black/80">
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -402,7 +445,7 @@ export default function ImageGen() {
                         <div className="grid sm:grid-cols-[180px_1fr] gap-4 items-start">
                           <div className="relative rounded-xl overflow-hidden border border-border/70">
                             <img src={referenceImg} alt="Your product" className="w-full aspect-square object-cover" />
-                            <button onClick={() => setReferenceImg(null)} className="absolute top-1.5 right-1.5 h-7 w-7 rounded-md bg-black/65 text-white flex items-center justify-center hover:bg-black/85">
+                            <button onClick={() => (setReferenceImg(null), setReferenceUrl(null))} className="absolute top-1.5 right-1.5 h-7 w-7 rounded-md bg-black/65 text-white flex items-center justify-center hover:bg-black/85">
                               <X className="h-3.5 w-3.5" />
                             </button>
                             <Badge className="absolute bottom-1.5 left-1.5 bg-black/65 text-white border-0 text-[10px]">Your product</Badge>
@@ -413,7 +456,7 @@ export default function ImageGen() {
                               {SCENES.map((s) => (
                                 <button
                                   key={s.id}
-                                  onClick={() => { setPrompt(s.prompt); setTimeout(() => generate(s.prompt), 50); }}
+                                  onClick={() => { setPrompt(s.prompt); setSceneId(s.id); setTimeout(() => generate(s.prompt, s.id), 50); }}
                                   className="text-left rounded-xl border border-border/70 bg-card hover:border-[hsl(var(--primary))]/60 hover:bg-secondary/40 transition-colors p-3"
                                 >
                                   <div className="flex items-center gap-1.5 mb-1">
@@ -437,7 +480,7 @@ export default function ImageGen() {
                         <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
                           <img src={referenceImg} alt="ref" className="h-8 w-8 rounded object-cover border border-border/60" />
                           <span>Restyling your uploaded product</span>
-                          <button onClick={() => setReferenceImg(null)} className="ml-1 underline hover:text-foreground">remove</button>
+                          <button onClick={() => (setReferenceImg(null), setReferenceUrl(null))} className="ml-1 underline hover:text-foreground">remove</button>
                         </div>
                       )}
                       <div className={`grid ${gridCols} gap-4`}>

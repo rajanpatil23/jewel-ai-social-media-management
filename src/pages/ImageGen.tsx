@@ -65,6 +65,25 @@ const PRESETS = [
     prompt: "Tennis bracelet worn on a woman's wrist, holding a coffee cup at a Parisian café, golden hour, lifestyle fashion photography", style: "lifestyle", ratio: "4:5" },
 ];
 
+const SCENES = [
+  { id: "studio",    label: "Pro Studio",       emoji: "📸", desc: "Clean white studio, catalog-grade",
+    prompt: "the exact same jewelry product, photographed in a high-end professional studio on seamless pure white background, soft directional softbox lighting, sharp macro focus, ultra-detailed reflections on metal and gemstones, e-commerce catalog photography, 8k" },
+  { id: "luxury",    label: "Luxury Showroom",  emoji: "💎", desc: "Velvet, marble, gold accents",
+    prompt: "the exact same jewelry product displayed in a luxury showroom, on black velvet pedestal with marble and brushed gold accents, dramatic spotlight, deep shadows, premium boutique mood, hyper-detailed editorial product photography" },
+  { id: "model_w",   label: "Worn by Woman",    emoji: "👩", desc: "Elegant Indian model wearing it",
+    prompt: "the exact same jewelry product worn by an elegant young Indian woman, soft beauty lighting, close-up on the jewelry, blurred luxurious background, fashion editorial photography, photorealistic, ultra-detailed" },
+  { id: "bridal",    label: "Bridal",           emoji: "👰", desc: "Bride in red lehenga, traditional",
+    prompt: "the exact same jewelry product worn by a stunning Indian bride in a red and gold bridal lehenga, traditional makeup, soft warm lighting, ornate background, regal wedding mood, photorealistic editorial" },
+  { id: "lifestyle", label: "Lifestyle",        emoji: "☕", desc: "Natural cafe / outdoor moment",
+    prompt: "the exact same jewelry product worn by a stylish woman in a candid lifestyle moment, golden hour natural light, shallow depth of field, premium fashion lifestyle photography" },
+  { id: "festive",   label: "Festive Diwali",   emoji: "🪔", desc: "Diyas, marigold, rich silk",
+    prompt: "the exact same jewelry product styled on rich maroon silk with glowing diyas and marigold flowers around, warm festive Diwali lighting, cinematic mood, ultra-detailed product photography" },
+  { id: "marble",    label: "Marble Flatlay",   emoji: "🏛️", desc: "Top-down on white marble",
+    prompt: "the exact same jewelry product in a top-down flatlay on white Carrara marble with soft morning light, minimalist composition, premium magazine styling, sharp macro details" },
+  { id: "editorial", label: "Dark Editorial",   emoji: "🖤", desc: "Moody, magazine cover vibe",
+    prompt: "the exact same jewelry product photographed against a dark moody backdrop, dramatic chiaroscuro lighting, high-fashion magazine cover aesthetic, ultra-sharp metal and gemstone detail" },
+];
+
 const PROMPT_IDEAS = [
   "Diamond solitaire ring on cream silk, soft studio lighting",
   "Gold pendant necklace on marble with morning light",

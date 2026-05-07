@@ -371,19 +371,75 @@ export default function ImageGen() {
               <div className="flex flex-col min-w-0 h-full">
                 <div className="flex-1 flex items-center justify-center">
                   {!loading && results.length === 0 ? (
-                    <div className="text-center max-w-md mx-auto px-6 py-12">
-                      <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(var(--primary))]/30 to-[hsl(var(--primary-deep))]/30 mb-5 relative">
-                        <ImageIcon className="h-9 w-9 text-[hsl(var(--primary))]" />
-                        <Sparkles className="h-4 w-4 text-[hsl(var(--primary))] absolute -top-1 -right-1" />
+                    <div className="w-full max-w-3xl mx-auto px-6 py-8">
+                      <div className="text-center mb-6">
+                        <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(var(--primary))]/30 to-[hsl(var(--primary-deep))]/30 mb-4 relative">
+                          <ImageIcon className="h-8 w-8 text-[hsl(var(--primary))]" />
+                          <Sparkles className="h-4 w-4 text-[hsl(var(--primary))] absolute -top-1 -right-1" />
+                        </div>
+                        <h2 className="font-display text-2xl md:text-3xl tracking-tight mb-2">Restyle your product</h2>
+                        <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+                          Upload your jewelry photo, then pick a scene — we'll regenerate the same product in a luxury, model-worn, or showroom setting.
+                        </p>
                       </div>
-                      <h2 className="font-display text-2xl md:text-3xl tracking-tight mb-3">Start generating images</h2>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Describe the image you want to generate in the prompt field below.
-                        For inspiration, browse <button onClick={() => setTab("gallery")} className="text-[hsl(var(--primary))] underline underline-offset-2 hover:no-underline">Gallery</button> or apply a quick start template.
-                      </p>
+
+                      {!referenceImg ? (
+                        <button
+                          onClick={() => fileRef.current?.click()}
+                          className="w-full min-h-[220px] flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border/70 hover:border-[hsl(var(--primary))]/60 hover:bg-secondary/30 transition-colors text-muted-foreground hover:text-foreground"
+                        >
+                          <Upload className="h-8 w-8" />
+                          <div className="text-center">
+                            <p className="text-base font-medium text-foreground">Upload your product image</p>
+                            <p className="text-xs mt-1">PNG / JPG · clear photo of your jewelry</p>
+                          </div>
+                          <span className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[hsl(var(--primary))] text-primary-foreground text-xs font-medium">
+                            <FileImage className="h-3.5 w-3.5" /> Choose file
+                          </span>
+                          <p className="text-[11px] mt-2">Or just type a prompt below to generate from scratch.</p>
+                        </button>
+                      ) : (
+                        <div className="grid sm:grid-cols-[180px_1fr] gap-4 items-start">
+                          <div className="relative rounded-xl overflow-hidden border border-border/70">
+                            <img src={referenceImg} alt="Your product" className="w-full aspect-square object-cover" />
+                            <button onClick={() => setReferenceImg(null)} className="absolute top-1.5 right-1.5 h-7 w-7 rounded-md bg-black/65 text-white flex items-center justify-center hover:bg-black/85">
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                            <Badge className="absolute bottom-1.5 left-1.5 bg-black/65 text-white border-0 text-[10px]">Your product</Badge>
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Pick a scene to restyle into</p>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {SCENES.map((s) => (
+                                <button
+                                  key={s.id}
+                                  onClick={() => { setPrompt(s.prompt); setTimeout(() => generate(s.prompt), 50); }}
+                                  className="text-left rounded-xl border border-border/70 bg-card hover:border-[hsl(var(--primary))]/60 hover:bg-secondary/40 transition-colors p-3"
+                                >
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <span className="text-base leading-none">{s.emoji}</span>
+                                    <span className="text-xs font-medium">{s.label}</span>
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground line-clamp-2">{s.desc}</p>
+                                </button>
+                              ))}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground mt-3">
+                              Or write your own scene in the prompt below and hit Generate.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="w-full">
+                      {referenceImg && (
+                        <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+                          <img src={referenceImg} alt="ref" className="h-8 w-8 rounded object-cover border border-border/60" />
+                          <span>Restyling your uploaded product</span>
+                          <button onClick={() => setReferenceImg(null)} className="ml-1 underline hover:text-foreground">remove</button>
+                        </div>
+                      )}
                       <div className={`grid ${gridCols} gap-4`}>
                         {(loading ? Array(count[0]).fill(null) : results).map((item, i) => (
                           <Card key={i} className="group relative overflow-hidden rounded-xl border-border/70 shadow-[var(--shadow-elegant)] hover:shadow-[var(--shadow-gold)] transition-all bg-card">

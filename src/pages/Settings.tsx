@@ -63,6 +63,12 @@ export default function Settings() {
     } finally { setAiSaving(false); }
   };
 
+  const onProviderChange = (provider: AiSettings["provider"]) => {
+    setAiProvider(provider);
+    const models = modelsForProvider(provider);
+    setAiModel((current) => models.some((m) => m.id === current) ? current : models[0].id);
+  };
+
   const onClearKey = async () => {
     setAiSaving(true);
     try {
@@ -115,10 +121,11 @@ export default function Settings() {
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Provider</Label>
-                <Select value={aiProvider} onValueChange={(v) => setAiProvider(v as any)}>
+                <Select value={aiProvider} onValueChange={(v) => onProviderChange(v as AiSettings["provider"])}>
                   <SelectTrigger className="bg-secondary/40"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="lovable">Lovable AI Gateway (Nano Banana)</SelectItem>
+                    <SelectItem value="gemini">Google Gemini API</SelectItem>
+                    <SelectItem value="lovable">Lovable AI Gateway</SelectItem>
                     <SelectItem value="openai">OpenAI (gpt-image-1)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -128,7 +135,7 @@ export default function Settings() {
                 <Select value={aiModel} onValueChange={setAiModel}>
                   <SelectTrigger className="bg-secondary/40"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {AI_MODELS.map(m => <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>)}
+                    {modelsForProvider(aiProvider).map(m => <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

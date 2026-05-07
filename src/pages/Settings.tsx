@@ -65,6 +65,17 @@ export default function Settings() {
     } finally { setAiSaving(false); }
   };
 
+  const [aiTesting, setAiTesting] = useState(false);
+  const onTestAi = async () => {
+    setAiTesting(true);
+    try {
+      const r = await testAiConnection();
+      if (r.ok) toast.success(`✓ AI works — ${r.provider}/${r.model}`);
+      else toast.error(`✗ ${r.error || "failed"}: ${r.detail || ""}`);
+    } catch (e: any) {
+      toast.error(`✗ ${e?.data?.detail || e?.message || "Test failed"}`);
+    } finally { setAiTesting(false); }
+  };
   return (
     <AppLayout>
       <PageHeader eyebrow="Settings" title="Brand Control Center" description="Define your brand DNA — Aurum AI applies it across every generated asset." />

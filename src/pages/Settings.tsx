@@ -8,11 +8,11 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Instagram, Facebook, Upload, CheckCircle2, Gem, KeyRound, Sparkles, ExternalLink, Loader2 } from "lucide-react";
+import { Instagram, Facebook, Upload, CheckCircle2, Gem, KeyRound, Sparkles, ExternalLink, Loader2, FlaskConical } from "lucide-react";
 import { tones } from "@/lib/mockData";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getAiSettings, saveAiSettings, type AiSettings } from "@/lib/ai";
+import { getAiSettings, saveAiSettings, testAiConnection, type AiSettings } from "@/lib/ai";
 
 const colorSwatches = ["#D4AF37","#0A0A0A","#FFFFFF","#7B1E1E","#1E3A8A","#0F766E"];
 const fonts = ["Playfair Display", "Cormorant Garamond", "Didot", "Inter", "Bodoni Moda"];

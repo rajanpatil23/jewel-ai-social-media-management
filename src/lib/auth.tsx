@@ -45,18 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    // DUMMY LOGIN (temporary — revert before pulling)
-    setUser({ id: "dummy", email: email || "demo@advora.app", name: (email?.split("@")[0]) || "Demo User" });
-    return;
-    // eslint-disable-next-line no-unreachable
     const r = await api.post<{ user: AuthUser }>("/auth/login", { email, password });
     setUser(r.user);
   };
   const register = async (email: string, password: string, name: string) => {
-    // DUMMY REGISTER (temporary — revert before pulling)
-    setUser({ id: "dummy", email, name: name || email.split("@")[0] });
-    return;
-    // eslint-disable-next-line no-unreachable
     const r = await api.post<{ user: AuthUser }>("/auth/register", { email, password, name });
     setUser(r.user);
   };

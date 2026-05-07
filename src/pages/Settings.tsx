@@ -8,11 +8,11 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Instagram, Facebook, Upload, CheckCircle2, Gem, KeyRound, Sparkles, ExternalLink, Loader2 } from "lucide-react";
+import { Instagram, Facebook, Upload, CheckCircle2, Gem, KeyRound, Sparkles, ExternalLink, Loader2, FlaskConical } from "lucide-react";
 import { tones } from "@/lib/mockData";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getAiSettings, saveAiSettings, type AiSettings } from "@/lib/ai";
+import { getAiSettings, saveAiSettings, testAiConnection, type AiSettings } from "@/lib/ai";
 
 const colorSwatches = ["#D4AF37","#0A0A0A","#FFFFFF","#7B1E1E","#1E3A8A","#0F766E"];
 const fonts = ["Playfair Display", "Cormorant Garamond", "Didot", "Inter", "Bodoni Moda"];
@@ -21,6 +21,9 @@ const AI_MODELS = [
   { id: "google/gemini-2.5-flash-image", label: "Nano Banana — fast, great quality (default)" },
   { id: "google/gemini-3.1-flash-image-preview", label: "Nano Banana 2 — pro quality, fast" },
   { id: "google/gemini-3-pro-image-preview", label: "Nano Banana Pro — highest quality, slower" },
+];
+const OPENAI_MODELS = [
+  { id: "gpt-image-1", label: "gpt-image-1 (OpenAI)" },
 ];
 
 export default function Settings() {
@@ -62,6 +65,17 @@ export default function Settings() {
     } finally { setAiSaving(false); }
   };
 
+  const [aiTesting, setAiTesting] = useState(false);
+  const onTestAi = async () => {
+    setAiTesting(true);
+    try {
+      const r = await testAiConnection();
+      if (r.ok) toast.success(`✓ AI works — ${r.provider}/${r.model}`);
+      else toast.error(`✗ ${r.error || "failed"}: ${r.detail || ""}`);
+    } catch (e: any) {
+      toast.error(`✗ ${e?.data?.detail || e?.message || "Test failed"}`);
+    } finally { setAiTesting(false); }
+  };
   return (
     <AppLayout>
       <PageHeader eyebrow="Settings" title="Brand Control Center" description="Define your brand DNA — Aurum AI applies it across every generated asset." />
@@ -136,6 +150,10 @@ export default function Settings() {
               <Button variant="gold" onClick={onSaveAi} disabled={aiSaving}>
                 {aiSaving && <Loader2 className="h-3 w-3 animate-spin mr-1.5" />}
                 Save settings
+              </Button>
+              <Button variant="outline" onClick={onTestAi} disabled={aiTesting}>
+                {aiTesting ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <FlaskConical className="h-3 w-3 mr-1.5" />}
+                Test connection
               </Button>
               {ai?.has_own_key && (
                 <Button variant="outline" onClick={onClearKey} disabled={aiSaving}>

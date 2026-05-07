@@ -29,14 +29,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const r = await api.get<{ user: AuthUser }>("/auth/me");
         setUser(r.user);
       } catch (e) {
-        if (e instanceof TypeError) {
-          // No backend available → preview mode
-          setPreviewMode(true);
-          setUser(PREVIEW_USER);
-        } else if (e instanceof ApiError && e.status === 401) {
+        // A real, working backend that says "not logged in" → 401.
+        // Anything else (network error, 500, HTML response, etc.) means
+        // there's no PHP backend reachable → fall back to preview mode so
+        // the UI is still navigable here in Lovable.
+        if (e instanceof ApiError && e.status === 401) {
           setUser(null);
         } else {
-          setUser(null);
+          setPreviewMode(true);
+          setUser(PREVIEW_USER);
         }
       } finally {
         setLoading(false);

@@ -71,6 +71,10 @@ function resolve_user_ai(string $user_id): array {
     $model    = $row['ai_model']    ?? ($cfg['ai_model']    ?? 'gemini-2.5-flash-image');
     $apiKey   = trim((string)(!empty($row['ai_api_key']) ? $row['ai_api_key'] : ($cfg['ai_api_key'] ?? '')));
     if ($apiKey === '' || str_starts_with($apiKey, 'CHANGE_ME')) $apiKey = '';
+    if ($apiKey === '') {
+        $envKey = env_ai_key_for_provider($provider) ?: env_ai_key_for_provider('gemini') ?: env_ai_key_for_provider('lovable') ?: env_ai_key_for_provider('openai');
+        if ($envKey) $apiKey = $envKey;
+    }
     $detected = detect_ai_provider_from_key((string)$apiKey);
     if ($detected) $provider = $detected;
 
@@ -99,4 +103,15 @@ function normalize_model_for_provider(string $provider, string $model): string {
         return str_starts_with($model, 'google/') ? $model : 'google/' . $model;
     }
     return $model ?: 'gpt-image-1';
+}
+
+function env_ai_key_for_provider(string $provider): string {
+    $names = $provider === 'gemini'
+        ? ['GEMINI_API_KEY', 'GOOGLE_API_KEY']
+        : ($provider === 'lovable' ? ['LOVABLE_API_KEY'] : ['OPENAI_API_KEY']);
+    foreach ($names as $name) {
+        $v = getenv($name);
+        if (is_string($v) && trim($v) !== '') return trim($v);
+    }
+    return '';
 }

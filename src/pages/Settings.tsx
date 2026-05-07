@@ -18,13 +18,20 @@ const colorSwatches = ["#D4AF37","#0A0A0A","#FFFFFF","#7B1E1E","#1E3A8A","#0F766
 const fonts = ["Playfair Display", "Cormorant Garamond", "Didot", "Inter", "Bodoni Moda"];
 
 const AI_MODELS = [
-  { id: "google/gemini-2.5-flash-image", label: "Nano Banana — fast, great quality (default)" },
+  { id: "gemini-2.5-flash-image", label: "Gemini 2.5 Flash Image — fast, great quality" },
+  { id: "gemini-3.1-flash-image-preview", label: "Gemini 3.1 Flash Image — pro quality, fast" },
+  { id: "gemini-3-pro-image-preview", label: "Gemini 3 Pro Image — highest quality, slower" },
+];
+const LOVABLE_MODELS = [
+  { id: "google/gemini-2.5-flash-image", label: "Nano Banana — fast, great quality" },
   { id: "google/gemini-3.1-flash-image-preview", label: "Nano Banana 2 — pro quality, fast" },
   { id: "google/gemini-3-pro-image-preview", label: "Nano Banana Pro — highest quality, slower" },
 ];
 const OPENAI_MODELS = [
   { id: "gpt-image-1", label: "gpt-image-1 (OpenAI)" },
 ];
+const modelsForProvider = (provider: AiSettings["provider"]) =>
+  provider === "openai" ? OPENAI_MODELS : provider === "lovable" ? LOVABLE_MODELS : AI_MODELS;
 
 export default function Settings() {
   const [tone, setTone] = useState<string>("Luxury");
@@ -34,7 +41,7 @@ export default function Settings() {
   const [ai, setAi] = useState<AiSettings | null>(null);
   const [aiKey, setAiKey] = useState("");
   const [aiModel, setAiModel] = useState(AI_MODELS[0].id);
-  const [aiProvider, setAiProvider] = useState<"lovable" | "openai">("lovable");
+  const [aiProvider, setAiProvider] = useState<AiSettings["provider"]>("gemini");
   const [aiSaving, setAiSaving] = useState(false);
 
   useEffect(() => {

@@ -67,10 +67,34 @@ function resolve_user_ai(string $user_id): array {
     $q = db()->prepare('SELECT ai_provider, ai_model, ai_api_key FROM user_settings WHERE user_id = ?');
     $q->execute([$user_id]);
     $row = $q->fetch();
+    $provider = $row['ai_provider'] ?? ($cfg['ai_provider'] ?? 'gemini');
+    $model    = $row['ai_model']    ?? ($cfg['ai_model']    ?? 'gemini-2.5-flash-image');
+    $apiKey   = !empty($row['ai_api_key']) ? $row['ai_api_key'] : ($cfg['ai_api_key'] ?? '');
+    $detected = detect_ai_provider_from_key((string)$apiKey);
+    if ($detected) $provider = $detected;
+
     return [
-        'provider' => $row['ai_provider'] ?? ($cfg['ai_provider'] ?? 'lovable'),
-        'model'    => $row['ai_model']    ?? ($cfg['ai_model']    ?? 'google/gemini-2.5-flash-image'),
-        'api_key'  => !empty($row['ai_api_key']) ? $row['ai_api_key'] : ($cfg['ai_api_key'] ?? ''),
+        'provider' => $provider,
+        'model'    => normalize_model_for_provider($provider, $model),
+        'api_key'  => $apiKey,
         'using_own'=> !empty($row['ai_api_key']),
     ];
+}
+
+function detect_ai_provider_from_key(string $key): ?string {
+    $key = trim($key);
+    if ($key === '' || str_starts_with($key, 'CHANGE_ME')) return null;
+    if (str_starts_with($key, 'sk-') || str_starts_with($key, 'sk_')) return 'lovable';
+    if (str_starts_with($key, 'AIza')) return 'gemini';
+    return null;
+}
+
+function normalize_model_for_provider(string $provider, string $model): string {
+    if ($provider === 'gemini') {
+        return preg_replace('#^google/#', '', $model) ?: 'gemini-2.5-flash-image';
+    }
+    if ($provider === 'lovable') {
+        return str_starts_with($model, 'google/') ? $model : 'google/' . $model;
+    }
+    return $model ?: 'gpt-image-1';
 }

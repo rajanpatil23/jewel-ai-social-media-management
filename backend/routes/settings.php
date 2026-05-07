@@ -85,7 +85,8 @@ function resolve_user_ai(string $user_id): array {
 function detect_ai_provider_from_key(string $key): ?string {
     $key = trim($key);
     if ($key === '' || str_starts_with($key, 'CHANGE_ME')) return null;
-    if (str_starts_with($key, 'sk-') || str_starts_with($key, 'sk_')) return 'lovable';
+    if (str_starts_with($key, 'sk_')) return 'lovable';
+    if (str_starts_with($key, 'sk-')) return 'openai';
     if (str_starts_with($key, 'AIza')) return 'gemini';
     return null;
 }

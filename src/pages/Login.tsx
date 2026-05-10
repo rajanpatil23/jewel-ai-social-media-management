@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { toast } from "sonner";
 import advoraLogo from "@/assets/advora-logo.png";
+import ekadhiLogo from "@/assets/ekadhi-logo.webp";
 
 export default function Login() {
   const { login, user, previewMode } = useAuth();
@@ -37,12 +38,10 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md p-8">
-        <div className="flex items-center gap-2.5 mb-6">
-          <img src={advoraLogo} alt="Advora" className="h-8 w-8" />
-          <div>
-            <div className="font-display text-lg">Advora</div>
-            <div className="text-xs text-muted-foreground">Sign in to your workspace</div>
-          </div>
+        <div className="flex flex-col items-center text-center mb-6">
+          <img src={ekadhiLogo} alt="Ekadhi Silver Jewellery" className="h-16 w-auto object-contain mb-3" />
+          <div className="font-display text-lg">Welcome back</div>
+          <div className="text-xs text-muted-foreground">Sign in to your Ekadhi Jewels workspace</div>
         </div>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
@@ -60,10 +59,13 @@ export default function Login() {
           </Button>
         </form>
         <p className="text-sm text-muted-foreground text-center mt-6">
-          New to Advora?{" "}
+          New here?{" "}
           <Link to="/register" className="text-foreground font-medium hover:underline">
             Create an account
           </Link>
+        </p>
+        <p className="mt-6 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground/70">
+          Powered by <img src={advoraLogo} alt="Advora" className="h-3 w-3 opacity-70" /> Advora
         </p>
       </Card>
     </div>

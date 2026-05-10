@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { toast } from "sonner";
 import advoraLogo from "@/assets/advora-logo.png";
+import ekadhiLogo from "@/assets/ekadhi-logo.webp";
 
 const errMap: Record<string, string> = {
   email_taken:    "An account with that email already exists",
@@ -29,7 +30,7 @@ export default function Register() {
     setBusy(true);
     try {
       await register(email, password, name);
-      toast.success("Welcome to Advora");
+      toast.success("Welcome to Ekadhi Jewels");
       nav("/dashboard", { replace: true });
     } catch (err) {
       const code = err instanceof ApiError ? err.message : "network_error";
@@ -42,12 +43,10 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md p-8">
-        <div className="flex items-center gap-2.5 mb-6">
-          <img src={advoraLogo} alt="Advora" className="h-8 w-8" />
-          <div>
-            <div className="font-display text-lg">Create your workspace</div>
-            <div className="text-xs text-muted-foreground">Built for jewellery brands</div>
-          </div>
+        <div className="flex flex-col items-center text-center mb-6">
+          <img src={ekadhiLogo} alt="Ekadhi Silver Jewellery" className="h-16 w-auto object-contain mb-3" />
+          <div className="font-display text-lg">Create your workspace</div>
+          <div className="text-xs text-muted-foreground">Ekadhi Jewels — content studio</div>
         </div>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">

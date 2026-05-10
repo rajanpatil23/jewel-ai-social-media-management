@@ -197,9 +197,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0">
                 <div className="h-14 flex items-center gap-2.5 px-4 border-b border-border">
-                  <img src={advoraLogo} alt="Advora" className="h-7 w-7 object-contain" />
+                  <img src={ekadhiLogo} alt="Ekadhi Jewels" className="h-7 w-7 object-contain" />
                   <div className="leading-tight">
-                    <div className="font-display text-[15px] tracking-tight">Advora</div>
+                    <div className="font-display text-[15px] tracking-tight">Ekadhi Jewels</div>
                     <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Workspace</div>
                   </div>
                 </div>

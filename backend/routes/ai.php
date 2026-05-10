@@ -68,7 +68,7 @@ function generate($m) {
     if ($prompt === '' && !$refImage) json_out(['error' => 'prompt_or_reference_required'], 400);
     if (mb_strlen($prompt) > 2000)    json_out(['error' => 'prompt_too_long'], 400);
 
-    $finalPrompt = build_jewelry_prompt($prompt, $sceneId, !empty($refImage));
+    $basePrompt = build_jewelry_prompt($prompt, $sceneId, !empty($refImage));
 
     $ai = resolve_user_ai($u['id']);
     $provider = $ai['provider'];
@@ -95,21 +95,24 @@ function generate($m) {
         }
 
         if ($provider === 'gemini') {
-            $images = call_gemini_image_multi($finalPrompt, $refImage, $count, $apiKey, $model);
-            json_out(['images' => $images, 'using_own_key' => $ai['using_own'], 'provider' => 'gemini', 'model' => $model]);
+            $images = call_gemini_image_multi($basePrompt, $refImage, $count, $apiKey, $model);
+        } elseif ($provider === 'lovable') {
+            $images = call_lovable_ai_multi($basePrompt, $refImage, $count, $apiKey, $model);
+        } elseif ($provider === 'openai') {
+            $images = call_openai_image($basePrompt, $count, ['ai_api_key' => $apiKey, 'ai_model' => $model]);
+        } else {
+            json_out(['error' => 'unknown_provider', 'detail' => $provider], 400);
         }
 
-        if ($provider === 'lovable') {
-            $images = call_lovable_ai_multi($finalPrompt, $refImage, $count, $apiKey, $model);
-            json_out(['images' => $images, 'using_own_key' => $ai['using_own'], 'provider' => 'lovable', 'model' => $model]);
-        }
+        // Persist data URIs as files + auto-add to gallery so they appear everywhere
+        $persisted = persist_and_save_gallery($u['id'], $images, $prompt ?: ($sceneId ?: 'Generated'));
+        json_out([
+            'images'        => $persisted,
+            'using_own_key' => $ai['using_own'],
+            'provider'      => $provider,
+            'model'         => $model,
+        ]);
 
-        if ($provider === 'openai') {
-            $images = call_openai_image($finalPrompt, $count, ['ai_api_key' => $apiKey, 'ai_model' => $model]);
-            json_out(['images' => $images, 'using_own_key' => $ai['using_own'], 'provider' => 'openai', 'model' => $model]);
-        }
-
-        json_out(['error' => 'unknown_provider', 'detail' => $provider], 400);
     } catch (Throwable $e) {
         error_log('[ai/generate] ' . $e->getMessage());
         // Real error — surface it. The frontend will show a toast with this detail.

@@ -364,6 +364,30 @@ export default function ImageGen() {
                       </Select>
                     </div>
 
+                    {/* Number of images */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground">Number of images</Label>
+                        <span className="text-xs font-medium tabular-nums">{count[0]}</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        {[1, 2, 3, 4, 6].map((n) => (
+                          <button
+                            key={n}
+                            onClick={() => setCount([n])}
+                            className={`flex-1 h-9 rounded-md text-xs font-medium border transition-colors ${
+                              count[0] === n
+                                ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-transparent"
+                                : "bg-background border-border/70 text-muted-foreground hover:text-foreground hover:border-[hsl(var(--primary))]/50"
+                            }`}
+                          >
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">More images = longer wait + higher cost.</p>
+                    </div>
+
                     {/* Use Google Search */}
                     <div className="flex items-center justify-between pt-1">
                       <div className="flex items-center gap-1.5">

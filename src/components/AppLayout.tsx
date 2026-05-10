@@ -23,6 +23,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth";
 import advoraLogo from "@/assets/advora-logo.png";
+import ekadhiLogo from "@/assets/ekadhi-logo.webp";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },

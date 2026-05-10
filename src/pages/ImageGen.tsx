@@ -113,7 +113,7 @@ export default function ImageGen() {
   const [negative, setNegative] = useState("");
   const [style, setStyle] = useState("studio");
   const [ratio, setRatio] = useState("1:1");
-  const [count, setCount] = useState([4]);
+  const [count, setCount] = useState([1]);
   const [quality, setQuality] = useState([75]);
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);

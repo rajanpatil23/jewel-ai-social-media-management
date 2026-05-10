@@ -60,7 +60,7 @@ function generate($m) {
     $b = json_in();
 
     $prompt    = trim((string)($b['prompt'] ?? ''));
-    $count     = max(1, min(4, (int)($b['count'] ?? 1)));
+    $count     = max(1, min(6, (int)($b['count'] ?? 1)));
     $ratio     = (string)($b['ratio'] ?? '1:1');
     $sceneId   = isset($b['scene']) ? (string)$b['scene'] : null;
     $refImage  = isset($b['reference_image']) ? (string)$b['reference_image'] : null; // URL or data URI

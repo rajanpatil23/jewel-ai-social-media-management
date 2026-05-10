@@ -117,10 +117,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         }`}
       >
         <div className={`h-14 flex items-center border-b border-border ${sidebarCollapsed ? "justify-center px-0" : "gap-2.5 px-4"}`}>
-          <img src={advoraLogo} alt="Advora" className="h-7 w-7 object-contain shrink-0" />
+          <img src={ekadhiLogo} alt="Ekadhi Jewels" className="h-7 w-7 object-contain shrink-0" />
           {!sidebarCollapsed && (
             <div className="leading-tight min-w-0">
-              <div className="font-display text-[15px] tracking-tight truncate">Advora</div>
+              <div className="font-display text-[15px] tracking-tight truncate">Ekadhi Jewels</div>
               <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground truncate">Workspace</div>
             </div>
           )}

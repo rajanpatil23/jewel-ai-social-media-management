@@ -7,6 +7,7 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
+import ekadhiLogo from "@/assets/ekadhi-logo.webp";
 
 const main = [
   { title: "Overview", url: "/", icon: LayoutDashboard },

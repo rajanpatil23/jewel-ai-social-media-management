@@ -43,7 +43,7 @@ export const scheduledPosts: ScheduledPost[] = [
   { id: "p1", title: "Diwali Gold Edit", date: "2026-05-08", time: "19:00", platforms: ["instagram"], format: "single", status: "scheduled", img: "necklace",
     caption: "Light up the season ✨ #DiwaliGold #FineJewelry", ig: { location: "Mumbai, India", firstComment: "Tap to shop ↗" } },
   { id: "p2", title: "Bridal Sneak Peek", date: "2026-05-10", time: "11:00", platforms: ["instagram","facebook"], format: "carousel", status: "scheduled", img: "ring",
-    caption: "Begin forever in brilliance.", ig: { collaborators: ["@bridesofindia"] }, fb: { ctaButton: "Shop Now", link: "https://maisonaurelia.com/bridal" } },
+    caption: "Begin forever in brilliance.", ig: { collaborators: ["@bridesofindia"] }, fb: { ctaButton: "Shop Now", link: "https://ekadhijewels.com/bridal" } },
   { id: "p3", title: "Earring Tuesday", date: "2026-05-12", time: "17:30", platforms: ["facebook"], format: "single", status: "scheduled", img: "earrings",
     caption: "Drop into Tuesday with our diamond drops.", fb: { ctaButton: "Learn More", place: "Bandra, Mumbai" } },
   { id: "p4", title: "Heritage Reel", date: "2026-05-15", time: "20:00", platforms: ["instagram"], format: "reel", status: "scheduled", img: "bracelet",

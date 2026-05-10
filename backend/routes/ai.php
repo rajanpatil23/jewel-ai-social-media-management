@@ -60,7 +60,7 @@ function generate($m) {
     $b = json_in();
 
     $prompt    = trim((string)($b['prompt'] ?? ''));
-    $count     = max(1, min(4, (int)($b['count'] ?? 1)));
+    $count     = max(1, min(6, (int)($b['count'] ?? 1)));
     $ratio     = (string)($b['ratio'] ?? '1:1');
     $sceneId   = isset($b['scene']) ? (string)$b['scene'] : null;
     $refImage  = isset($b['reference_image']) ? (string)$b['reference_image'] : null; // URL or data URI
@@ -68,7 +68,7 @@ function generate($m) {
     if ($prompt === '' && !$refImage) json_out(['error' => 'prompt_or_reference_required'], 400);
     if (mb_strlen($prompt) > 2000)    json_out(['error' => 'prompt_too_long'], 400);
 
-    $finalPrompt = build_jewelry_prompt($prompt, $sceneId, !empty($refImage));
+    $basePrompt = build_jewelry_prompt($prompt, $sceneId, !empty($refImage));
 
     $ai = resolve_user_ai($u['id']);
     $provider = $ai['provider'];
@@ -95,21 +95,24 @@ function generate($m) {
         }
 
         if ($provider === 'gemini') {
-            $images = call_gemini_image_multi($finalPrompt, $refImage, $count, $apiKey, $model);
-            json_out(['images' => $images, 'using_own_key' => $ai['using_own'], 'provider' => 'gemini', 'model' => $model]);
+            $images = call_gemini_image_multi($basePrompt, $refImage, $count, $apiKey, $model);
+        } elseif ($provider === 'lovable') {
+            $images = call_lovable_ai_multi($basePrompt, $refImage, $count, $apiKey, $model);
+        } elseif ($provider === 'openai') {
+            $images = call_openai_image($basePrompt, $count, ['ai_api_key' => $apiKey, 'ai_model' => $model]);
+        } else {
+            json_out(['error' => 'unknown_provider', 'detail' => $provider], 400);
         }
 
-        if ($provider === 'lovable') {
-            $images = call_lovable_ai_multi($finalPrompt, $refImage, $count, $apiKey, $model);
-            json_out(['images' => $images, 'using_own_key' => $ai['using_own'], 'provider' => 'lovable', 'model' => $model]);
-        }
+        // Persist data URIs as files + auto-add to gallery so they appear everywhere
+        $persisted = persist_and_save_gallery($u['id'], $images, $prompt ?: ($sceneId ?: 'Generated'));
+        json_out([
+            'images'        => $persisted,
+            'using_own_key' => $ai['using_own'],
+            'provider'      => $provider,
+            'model'         => $model,
+        ]);
 
-        if ($provider === 'openai') {
-            $images = call_openai_image($finalPrompt, $count, ['ai_api_key' => $apiKey, 'ai_model' => $model]);
-            json_out(['images' => $images, 'using_own_key' => $ai['using_own'], 'provider' => 'openai', 'model' => $model]);
-        }
-
-        json_out(['error' => 'unknown_provider', 'detail' => $provider], 400);
     } catch (Throwable $e) {
         error_log('[ai/generate] ' . $e->getMessage());
         // Real error — surface it. The frontend will show a toast with this detail.
@@ -226,19 +229,39 @@ function call_lovable_ai_multi(string $prompt, ?string $refImage, int $count, st
 }
 
 // Direct Gemini API path for customer Google API keys (AIza...).
+// We add a unique variation hint + randomized temperature/seed per request so
+// asking for N images returns N DIFFERENT compositions (Gemini is otherwise near-deterministic).
 function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, string $apiKey, string $model): array {
     $model = preg_replace('#^google/#', '', $model) ?: 'gemini-2.5-flash-image';
     $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent?key=' . rawurlencode($apiKey);
-    $parts = [['text' => $prompt]];
-    if ($refImage) $parts[] = gemini_image_part($refImage);
-    $body = json_encode([
-        'contents' => [['role' => 'user', 'parts' => $parts]],
-        'generationConfig' => ['responseModalities' => ['TEXT', 'IMAGE']],
-    ]);
+
+    $variationHints = [
+        'Variation A: tighter macro framing, slight left-side angle.',
+        'Variation B: wider composition, slight right-side angle, different background prop arrangement.',
+        'Variation C: top-down flatlay perspective, alternative styling props.',
+        'Variation D: three-quarter hero angle, alternate lighting direction and shadow shape.',
+        'Variation E: side profile view, different background tone.',
+        'Variation F: dramatic close-up on gemstone, alternate reflection pattern.',
+    ];
 
     $images = [];
     $lastErr = null;
     for ($i = 0; $i < $count; $i++) {
+        $seed = random_int(1, 2147483000);
+        $hint = $variationHints[$i % count($variationHints)];
+        $variedPrompt = $prompt . ' ' . $hint . ' [unique-seed:' . $seed . ']';
+
+        $parts = [['text' => $variedPrompt]];
+        if ($refImage) $parts[] = gemini_image_part($refImage);
+        $body = json_encode([
+            'contents' => [['role' => 'user', 'parts' => $parts]],
+            'generationConfig' => [
+                'responseModalities' => ['TEXT', 'IMAGE'],
+                'temperature'        => 1.0,
+                'seed'               => $seed,
+            ],
+        ]);
+
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -254,11 +277,44 @@ function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, 
         $data = json_decode($resp, true);
         foreach (($data['candidates'][0]['content']['parts'] ?? []) as $part) {
             $inline = $part['inlineData'] ?? $part['inline_data'] ?? null;
-            if (!empty($inline['data'])) $images[] = 'data:' . ($inline['mimeType'] ?? $inline['mime_type'] ?? 'image/png') . ';base64,' . $inline['data'];
+            if (!empty($inline['data'])) {
+                $images[] = 'data:' . ($inline['mimeType'] ?? $inline['mime_type'] ?? 'image/png') . ';base64,' . $inline['data'];
+                break; // one image per request — next loop iteration brings a new seed
+            }
         }
     }
     if (empty($images)) throw new Exception($lastErr ?: 'gemini_no_images_returned');
     return array_slice($images, 0, $count);
+}
+
+// Save data: URIs to /uploads as real files, insert into gallery, return public URLs.
+// External URLs (https://) are left as-is but still inserted into gallery.
+function persist_and_save_gallery(string $userId, array $images, string $label): array {
+    $cfg = cfg();
+    $dir = $cfg['uploads_dir'];
+    $urlBase = $cfg['uploads_url'] ?? '/api/uploads';
+    if (!is_dir($dir)) @mkdir($dir, 0775, true);
+
+    $out = [];
+    $ins = db()->prepare('INSERT INTO gallery (id,user_id,src,label) VALUES (?,?,?,?)');
+    $shortLabel = mb_substr($label, 0, 240);
+
+    foreach ($images as $img) {
+        $finalUrl = $img;
+        if (preg_match('#^data:([^;]+);base64,(.*)$#', $img, $m)) {
+            $mime = $m[1];
+            $bytes = base64_decode($m[2]);
+            $ext = $mime === 'image/jpeg' ? 'jpg' : ($mime === 'image/webp' ? 'webp' : 'png');
+            $name = 'gen_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            $path = $dir . '/' . $name;
+            if ($bytes && @file_put_contents($path, $bytes)) {
+                $finalUrl = rtrim($cfg['site_url'] ?? '', '/') . $urlBase . '/' . $name;
+            }
+        }
+        try { $ins->execute([uuid(), $userId, $finalUrl, $shortLabel]); } catch (Throwable $e) { /* ignore */ }
+        $out[] = $finalUrl;
+    }
+    return $out;
 }
 
 function gemini_image_part(string $src): array {

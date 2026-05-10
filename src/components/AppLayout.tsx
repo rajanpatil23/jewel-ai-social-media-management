@@ -234,7 +234,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
             {/* Mobile compact brand */}
             <div className="md:hidden flex items-center gap-2 min-w-0">
-              <img src={advoraLogo} alt="Advora" className="h-6 w-6 object-contain" />
+              <img src={ekadhiLogo} alt="Ekadhi Jewels" className="h-6 w-6 object-contain" />
               <span className="text-sm font-medium truncate">{currentLabel}</span>
             </div>
 

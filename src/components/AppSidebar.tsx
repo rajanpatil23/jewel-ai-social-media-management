@@ -7,6 +7,7 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
+import ekadhiLogo from "@/assets/ekadhi-logo.webp";
 
 const main = [
   { title: "Overview", url: "/", icon: LayoutDashboard },
@@ -74,13 +75,16 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
         {!collapsed ? (
-          <div className="m-2 rounded-lg glass p-3">
-            <p className="text-xs text-muted-foreground">Demo workspace</p>
-            <p className="text-sm font-medium gold-text">Maison Aurelia</p>
+          <div className="m-2 rounded-lg glass p-3 flex items-center gap-3">
+            <img src={ekadhiLogo} alt="Ekadhi Silver Jewellery" className="h-9 w-auto object-contain shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Workspace</p>
+              <p className="text-sm font-medium gold-text truncate">Ekadhi Jewels</p>
+            </div>
           </div>
         ) : (
-          <div className="m-2 h-9 rounded-lg bg-gradient-gold-soft border border-border flex items-center justify-center">
-            <span className="text-xs font-display gold-text">M</span>
+          <div className="m-2 h-9 rounded-lg bg-gradient-gold-soft border border-border flex items-center justify-center overflow-hidden">
+            <img src={ekadhiLogo} alt="Ekadhi" className="h-7 w-auto object-contain" />
           </div>
         )}
       </SidebarFooter>

@@ -239,7 +239,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
             {/* Desktop breadcrumb */}
             <div className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground min-w-0">
-              <span className="hidden sm:inline">Maison Aurelia</span>
+              <span className="hidden sm:inline">Ekadhi Jewels</span>
               <ChevronRight className="hidden sm:inline h-3.5 w-3.5" />
               <span className="text-foreground font-medium truncate">{currentLabel}</span>
             </div>

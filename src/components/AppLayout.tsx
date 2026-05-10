@@ -23,6 +23,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth";
 import advoraLogo from "@/assets/advora-logo.png";
+import ekadhiLogo from "@/assets/ekadhi-logo.webp";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -116,10 +117,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         }`}
       >
         <div className={`h-14 flex items-center border-b border-border ${sidebarCollapsed ? "justify-center px-0" : "gap-2.5 px-4"}`}>
-          <img src={advoraLogo} alt="Advora" className="h-7 w-7 object-contain shrink-0" />
+          <img src={ekadhiLogo} alt="Ekadhi Jewels" className="h-7 w-7 object-contain shrink-0" />
           {!sidebarCollapsed && (
             <div className="leading-tight min-w-0">
-              <div className="font-display text-[15px] tracking-tight truncate">Advora</div>
+              <div className="font-display text-[15px] tracking-tight truncate">Ekadhi Jewels</div>
               <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground truncate">Workspace</div>
             </div>
           )}
@@ -196,9 +197,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0">
                 <div className="h-14 flex items-center gap-2.5 px-4 border-b border-border">
-                  <img src={advoraLogo} alt="Advora" className="h-7 w-7 object-contain" />
+                  <img src={ekadhiLogo} alt="Ekadhi Jewels" className="h-7 w-7 object-contain" />
                   <div className="leading-tight">
-                    <div className="font-display text-[15px] tracking-tight">Advora</div>
+                    <div className="font-display text-[15px] tracking-tight">Ekadhi Jewels</div>
                     <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Workspace</div>
                   </div>
                 </div>
@@ -233,7 +234,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
             {/* Mobile compact brand */}
             <div className="md:hidden flex items-center gap-2 min-w-0">
-              <img src={advoraLogo} alt="Advora" className="h-6 w-6 object-contain" />
+              <img src={ekadhiLogo} alt="Ekadhi Jewels" className="h-6 w-6 object-contain" />
               <span className="text-sm font-medium truncate">{currentLabel}</span>
             </div>
 

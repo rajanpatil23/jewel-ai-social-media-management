@@ -1,7 +1,101 @@
 <?php
-// Per-user settings — BYOK (Bring Your Own Key) for AI image generation.
-// If the user saves their own API key, we use that. Otherwise we fall back
-// to the platform default key in config.php.
+// Per-user settings — BYOK (Bring Your Own Key) for AI image generation,
+// plus persistent Brand Identity (name, colors, font, logo) and tone prefs.
+// All data is stored in the user_settings table, scoped to the logged-in user.
+
+function ensure_user_settings_row(string $userId): void {
+    $pdo = db();
+    $exists = $pdo->prepare('SELECT 1 FROM user_settings WHERE user_id = ?');
+    $exists->execute([$userId]);
+    if (!$exists->fetch()) {
+        $pdo->prepare('INSERT INTO user_settings (user_id) VALUES (?)')->execute([$userId]);
+    }
+}
+
+function brand_settings($m) {
+    $u = require_auth();
+    $pdo = db();
+
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        $q = $pdo->prepare('SELECT brand_name, brand_logo_url, brand_colors, brand_font FROM user_settings WHERE user_id = ?');
+        $q->execute([$u['id']]);
+        $row = $q->fetch() ?: [];
+        $colorsRaw = (string)($row['brand_colors'] ?? '');
+        json_out([
+            'brand_name'  => $row['brand_name']     ?? '',
+            'logo_url'    => $row['brand_logo_url'] ?? '',
+            'colors'      => $colorsRaw === '' ? [] : array_values(array_filter(array_map('trim', explode(',', $colorsRaw)))),
+            'font'        => $row['brand_font']     ?? '',
+        ]);
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $b = json_in();
+        $name   = trim((string)($b['brand_name'] ?? ''));
+        $logo   = trim((string)($b['logo_url']   ?? ''));
+        $font   = trim((string)($b['font']       ?? ''));
+        $colors = $b['colors'] ?? [];
+        if (!is_array($colors)) $colors = [];
+        // sanitize hex codes
+        $colors = array_values(array_filter(array_map(function($c){
+            $c = trim((string)$c);
+            return preg_match('/^#[0-9a-fA-F]{3,8}$/', $c) ? $c : null;
+        }, $colors)));
+        $colorsCsv = implode(',', array_slice($colors, 0, 8));
+
+        if (mb_strlen($name) > 120) json_out(['error' => 'name_too_long'], 400);
+        if (mb_strlen($font) > 120) json_out(['error' => 'font_too_long'], 400);
+        if (mb_strlen($logo) > 2000) json_out(['error' => 'logo_too_long'], 400);
+
+        ensure_user_settings_row($u['id']);
+        $pdo->prepare('UPDATE user_settings SET brand_name=?, brand_logo_url=?, brand_colors=?, brand_font=? WHERE user_id=?')
+            ->execute([$name ?: null, $logo ?: null, $colorsCsv ?: null, $font ?: null, $u['id']]);
+        json_out(['ok' => true]);
+    }
+
+    json_out(['error' => 'method_not_allowed'], 405);
+}
+
+function tone_prefs($m) {
+    $u = require_auth();
+    $pdo = db();
+
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        $q = $pdo->prepare('SELECT caption_tone, prefs FROM user_settings WHERE user_id = ?');
+        $q->execute([$u['id']]);
+        $row = $q->fetch() ?: [];
+        $prefs = [];
+        if (!empty($row['prefs'])) { $tmp = json_decode($row['prefs'], true); if (is_array($tmp)) $prefs = $tmp; }
+        json_out(['tone' => $row['caption_tone'] ?? '', 'prefs' => $prefs]);
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $b = json_in();
+        $tone  = trim((string)($b['tone'] ?? ''));
+        $prefs = isset($b['prefs']) && is_array($b['prefs']) ? $b['prefs'] : [];
+        if (mb_strlen($tone) > 60) json_out(['error' => 'tone_too_long'], 400);
+        ensure_user_settings_row($u['id']);
+        $pdo->prepare('UPDATE user_settings SET caption_tone=?, prefs=? WHERE user_id=?')
+            ->execute([$tone ?: null, json_encode($prefs), $u['id']]);
+        json_out(['ok' => true]);
+    }
+
+    json_out(['error' => 'method_not_allowed'], 405);
+}
+
+// Used by ai.php when the user enables "Apply Branding".
+function get_user_brand(string $userId): array {
+    $q = db()->prepare('SELECT brand_name, brand_logo_url, brand_colors, brand_font FROM user_settings WHERE user_id = ?');
+    $q->execute([$userId]);
+    $row = $q->fetch() ?: [];
+    $colorsRaw = (string)($row['brand_colors'] ?? '');
+    return [
+        'brand_name' => $row['brand_name']     ?? '',
+        'logo_url'   => $row['brand_logo_url'] ?? '',
+        'colors'     => $colorsRaw === '' ? [] : array_values(array_filter(array_map('trim', explode(',', $colorsRaw)))),
+        'font'       => $row['brand_font']     ?? '',
+    ];
+}
 
 function ai_settings($m) {
     $u = require_auth();

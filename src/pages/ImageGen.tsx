@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/collapsible";
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
-import { addToGallery } from "@/lib/gallery";
+import { addToGallery, useGallery } from "@/lib/gallery";
 import { generateImages, uploadReference } from "@/lib/ai";
 import { getBrand, type BrandIdentity } from "@/lib/brand";
 import { ApiError } from "@/lib/api";
@@ -167,7 +167,7 @@ export default function ImageGen() {
         label: scene ? `${STYLES.find(s=>s.id===style)?.label || "Generated"} · ${scene}` : (p.slice(0, 60) || "Generated"),
       }));
       setResults(items);
-      setGallery((g) => [...items, ...g].slice(0, 24));
+      // Gallery hydrates from useGallery(); just push to local cache.
       setHistory((h) => [{ src: items[0]?.src || "", prompt: p }, ...h].slice(0, 8));
       addToGallery(items);
       toast.success(`${items.length} creative${items.length > 1 ? "s" : ""} generated`);
@@ -178,7 +178,7 @@ export default function ImageGen() {
       if (e instanceof TypeError) {
         const next = [...SAMPLES].sort(() => Math.random() - 0.5).slice(0, count[0]);
         setResults(next);
-        setGallery((g) => [...next, ...g].slice(0, 24));
+        // Gallery hydrates from useGallery(); just push to local cache.
         addToGallery(next);
         toast.success("Preview mode — showing sample images");
       } else if (apiErr?.data?.error === "no_api_key") {

@@ -251,7 +251,7 @@ function call_lovable_ai_multi(string $prompt, ?string $refImage, int $count, st
 // Direct Gemini API path for customer Google API keys (AIza...).
 // We add a unique variation hint + randomized temperature/seed per request so
 // asking for N images returns N DIFFERENT compositions (Gemini is otherwise near-deterministic).
-function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, string $apiKey, string $model): array {
+function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, string $apiKey, string $model, array $extraRefs = []): array {
     $model = preg_replace('#^google/#', '', $model) ?: 'gemini-2.5-flash-image';
     $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent?key=' . rawurlencode($apiKey);
 
@@ -273,6 +273,9 @@ function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, 
 
         $parts = [['text' => $variedPrompt]];
         if ($refImage) $parts[] = gemini_image_part($refImage);
+        foreach ($extraRefs as $ref) {
+            if ($ref) { try { $parts[] = gemini_image_part($ref); } catch (Throwable $e) { /* skip unreachable logo */ } }
+        }
         $body = json_encode([
             'contents' => [['role' => 'user', 'parts' => $parts]],
             'generationConfig' => [

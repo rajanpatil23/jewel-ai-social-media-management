@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 import { addToGallery } from "@/lib/gallery";
 import { generateImages, uploadReference } from "@/lib/ai";
+import { getBrand, type BrandIdentity } from "@/lib/brand";
 import { ApiError } from "@/lib/api";
 
 import ring from "@/assets/product-ring.jpg";
@@ -128,6 +129,12 @@ export default function ImageGen() {
   );
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Brand identity (fetched from /settings/brand) + toggle
+  const [brand, setBrand] = useState<BrandIdentity | null>(null);
+  const [applyBranding, setApplyBranding] = useState(false);
+  useEffect(() => { (async () => { setBrand(await getBrand()); })(); }, []);
+  const brandConfigured = !!(brand && (brand.brand_name || brand.logo_url || (brand.colors?.length ?? 0) > 0));
+
   // edit state
   const [editImg, setEditImg] = useState<string | null>(null);
   const [editTool, setEditTool] = useState("prompt");
@@ -149,6 +156,7 @@ export default function ImageGen() {
         ratio,
         scene,
         reference_image: referenceUrl || referenceImg, // URL preferred, data URI fallback
+        apply_branding: applyBranding,
       });
       const items: GenItem[] = res.images.map((src, i) => ({
         src,
@@ -395,6 +403,45 @@ export default function ImageGen() {
                         <Info className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       <Switch />
+                    </div>
+
+                    {/* Apply Branding */}
+                    <div className="rounded-lg border border-border/60 bg-secondary/20 p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <Label className="text-sm">Apply Branding</Label>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                        </div>
+                        <Switch
+                          checked={applyBranding}
+                          onCheckedChange={(v) => {
+                            if (v && !brandConfigured) {
+                              toast.error("Set up your brand identity in Settings → Brand Identity first");
+                              return;
+                            }
+                            setApplyBranding(v);
+                          }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground leading-snug">
+                        {applyBranding && brand
+                          ? `Using ${brand.brand_name || "your brand"}${brand.logo_url ? " + logo" : ""}${brand.colors?.length ? ` · ${brand.colors.length} accent colors` : ""}.`
+                          : brandConfigured
+                            ? "Off — your saved logo and brand colors won't be applied."
+                            : "Save your logo and brand colors in Settings → Brand Identity to enable."}
+                      </p>
+                      {applyBranding && brand && (brand.colors?.length || brand.logo_url) ? (
+                        <div className="flex items-center gap-2">
+                          {brand.logo_url && (
+                            <img src={brand.logo_url} alt="logo" className="h-6 w-6 rounded object-contain border border-border/60 bg-background" />
+                          )}
+                          <div className="flex gap-1">
+                            {brand.colors?.slice(0, 6).map((c) => (
+                              <span key={c} className="h-4 w-4 rounded-full border border-border/60" style={{ background: c }} />
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </CollapsibleContent>
                 </Collapsible>

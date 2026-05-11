@@ -64,11 +64,28 @@ function generate($m) {
     $ratio     = (string)($b['ratio'] ?? '1:1');
     $sceneId   = isset($b['scene']) ? (string)$b['scene'] : null;
     $refImage  = isset($b['reference_image']) ? (string)$b['reference_image'] : null; // URL or data URI
+    $applyBrand = !empty($b['apply_branding']);
 
     if ($prompt === '' && !$refImage) json_out(['error' => 'prompt_or_reference_required'], 400);
     if (mb_strlen($prompt) > 2000)    json_out(['error' => 'prompt_too_long'], 400);
 
     $basePrompt = build_jewelry_prompt($prompt, $sceneId, !empty($refImage));
+
+    // Apply Branding — inject brand DNA into the prompt and pass logo as extra reference.
+    $brandLogo = null;
+    if ($applyBrand) {
+        $brand = get_user_brand($u['id']);
+        $brandBits = [];
+        if (!empty($brand['brand_name'])) $brandBits[] = "Brand: " . $brand['brand_name'];
+        if (!empty($brand['colors']))     $brandBits[] = "Brand accent palette: " . implode(', ', $brand['colors'])
+                                            . " — use these tones in props, background, and styling, but do NOT alter the actual metal or gemstone colors of the jewelry";
+        if (!empty($brand['font']))       $brandBits[] = "Typography mood: " . $brand['font'] . " (luxury editorial)";
+        if (!empty($brand['logo_url'])) {
+            $brandLogo = $brand['logo_url'];
+            $brandBits[] = "Place a small, subtle brand logo watermark in the bottom-right corner using the provided logo reference (low opacity, tasteful, do not distort)";
+        }
+        if ($brandBits) $basePrompt .= ". " . implode('. ', $brandBits) . ".";
+    }
 
     $ai = resolve_user_ai($u['id']);
     $provider = $ai['provider'];
@@ -94,10 +111,11 @@ function generate($m) {
             ], 400);
         }
 
+        $extraRefs = $brandLogo ? [$brandLogo] : [];
         if ($provider === 'gemini') {
-            $images = call_gemini_image_multi($basePrompt, $refImage, $count, $apiKey, $model);
+            $images = call_gemini_image_multi($basePrompt, $refImage, $count, $apiKey, $model, $extraRefs);
         } elseif ($provider === 'lovable') {
-            $images = call_lovable_ai_multi($basePrompt, $refImage, $count, $apiKey, $model);
+            $images = call_lovable_ai_multi($basePrompt, $refImage, $count, $apiKey, $model, $extraRefs);
         } elseif ($provider === 'openai') {
             $images = call_openai_image($basePrompt, $count, ['ai_api_key' => $apiKey, 'ai_model' => $model]);
         } else {
@@ -161,17 +179,19 @@ function ai_test($m) {
 
 // Generate $count images in parallel via Lovable AI Gateway (Nano Banana).
 // Each request asks for a single image so we get count distinct variations.
-function call_lovable_ai_multi(string $prompt, ?string $refImage, int $count, string $apiKey, string $model): array {
+function call_lovable_ai_multi(string $prompt, ?string $refImage, int $count, string $apiKey, string $model, array $extraRefs = []): array {
     $url = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
     // Build the message content (multimodal if reference image is present)
-    if ($refImage) {
-        $content = [
-            ['type' => 'text', 'text' => $prompt],
-            ['type' => 'image_url', 'image_url' => ['url' => $refImage]],
-        ];
+    $hasImages = $refImage || !empty($extraRefs);
+    if ($hasImages) {
+        $content = [['type' => 'text', 'text' => $prompt]];
+        if ($refImage)   $content[] = ['type' => 'image_url', 'image_url' => ['url' => $refImage]];
+        foreach ($extraRefs as $ref) {
+            if ($ref) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $ref]];
+        }
     } else {
-        $content = $prompt; // string is fine
+        $content = $prompt;
     }
 
     $payload = [
@@ -231,7 +251,7 @@ function call_lovable_ai_multi(string $prompt, ?string $refImage, int $count, st
 // Direct Gemini API path for customer Google API keys (AIza...).
 // We add a unique variation hint + randomized temperature/seed per request so
 // asking for N images returns N DIFFERENT compositions (Gemini is otherwise near-deterministic).
-function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, string $apiKey, string $model): array {
+function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, string $apiKey, string $model, array $extraRefs = []): array {
     $model = preg_replace('#^google/#', '', $model) ?: 'gemini-2.5-flash-image';
     $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent?key=' . rawurlencode($apiKey);
 
@@ -253,6 +273,9 @@ function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, 
 
         $parts = [['text' => $variedPrompt]];
         if ($refImage) $parts[] = gemini_image_part($refImage);
+        foreach ($extraRefs as $ref) {
+            if ($ref) { try { $parts[] = gemini_image_part($ref); } catch (Throwable $e) { /* skip unreachable logo */ } }
+        }
         $body = json_encode([
             'contents' => [['role' => 'user', 'parts' => $parts]],
             'generationConfig' => [

@@ -85,9 +85,22 @@ $statements = [
         ai_provider VARCHAR(40) NOT NULL DEFAULT 'gemini',
         ai_api_key  TEXT,
         ai_model    VARCHAR(120) NOT NULL DEFAULT 'gemini-2.5-flash-image',
+        brand_name      VARCHAR(120) NULL,
+        brand_logo_url  TEXT NULL,
+        brand_colors    VARCHAR(255) NULL,
+        brand_font      VARCHAR(120) NULL,
+        caption_tone    VARCHAR(60) NULL,
+        prefs           LONGTEXT NULL,
         updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'user_settings.brand_name (migration)'     => "ALTER TABLE user_settings ADD COLUMN brand_name VARCHAR(120) NULL",
+    'user_settings.brand_logo_url (migration)' => "ALTER TABLE user_settings ADD COLUMN brand_logo_url TEXT NULL",
+    'user_settings.brand_colors (migration)'   => "ALTER TABLE user_settings ADD COLUMN brand_colors VARCHAR(255) NULL",
+    'user_settings.brand_font (migration)'     => "ALTER TABLE user_settings ADD COLUMN brand_font VARCHAR(120) NULL",
+    'user_settings.caption_tone (migration)'   => "ALTER TABLE user_settings ADD COLUMN caption_tone VARCHAR(60) NULL",
+    'user_settings.prefs (migration)'          => "ALTER TABLE user_settings ADD COLUMN prefs LONGTEXT NULL",
 
     'oauth_states' => "CREATE TABLE IF NOT EXISTS oauth_states (
         state       CHAR(64) PRIMARY KEY,

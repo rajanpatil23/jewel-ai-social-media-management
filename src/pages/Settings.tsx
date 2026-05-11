@@ -10,9 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Instagram, Facebook, Upload, CheckCircle2, Gem, KeyRound, Sparkles, ExternalLink, Loader2, FlaskConical } from "lucide-react";
 import { tones } from "@/lib/mockData";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { getAiSettings, saveAiSettings, testAiConnection, type AiSettings } from "@/lib/ai";
+import { getAiSettings, saveAiSettings, testAiConnection, uploadReference, type AiSettings } from "@/lib/ai";
+import { getBrand, saveBrand, type BrandIdentity } from "@/lib/brand";
 
 const colorSwatches = ["#D4AF37","#0A0A0A","#FFFFFF","#7B1E1E","#1E3A8A","#0F766E"];
 const fonts = ["Playfair Display", "Cormorant Garamond", "Didot", "Inter", "Bodoni Moda"];
@@ -35,8 +36,15 @@ const modelsForProvider = (provider: AiSettings["provider"]) =>
 
 export default function Settings() {
   const [tone, setTone] = useState<string>("Luxury");
-  const [colors, setColors] = useState([colorSwatches[0], colorSwatches[1]]);
+
+  // Brand identity (persisted per user)
+  const [brandName, setBrandName] = useState("Ekhadi Silver Jewels");
+  const [colors, setColors] = useState<string[]>([colorSwatches[0], colorSwatches[1]]);
   const [font, setFont] = useState(fonts[0]);
+  const [logoUrl, setLogoUrl] = useState<string>("");
+  const [brandSaving, setBrandSaving] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [ai, setAi] = useState<AiSettings | null>(null);
   const [aiKey, setAiKey] = useState("");
@@ -48,8 +56,38 @@ export default function Settings() {
     (async () => {
       const s = await getAiSettings();
       if (s) { setAi(s); setAiModel(s.model); setAiProvider(s.provider as any); }
+      const b = await getBrand();
+      if (b) {
+        if (b.brand_name) setBrandName(b.brand_name);
+        if (b.colors?.length) setColors(b.colors);
+        if (b.font) setFont(b.font);
+        if (b.logo_url) setLogoUrl(b.logo_url);
+      }
     })();
   }, []);
+
+  const onSaveBrand = async () => {
+    setBrandSaving(true);
+    try {
+      await saveBrand({ brand_name: brandName, colors, font, logo_url: logoUrl });
+      toast.success("Brand identity saved");
+    } catch {
+      toast.error("Could not save brand (is the backend reachable?)");
+    } finally { setBrandSaving(false); }
+  };
+
+  const onUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setLogoUploading(true);
+    try {
+      const url = await uploadReference(f);
+      setLogoUrl(url);
+      toast.success("Logo uploaded — don't forget to Save");
+    } catch {
+      toast.error("Logo upload failed");
+    } finally { setLogoUploading(false); e.target.value = ""; }
+  };
 
   const onSaveAi = async () => {
     setAiSaving(true);
@@ -182,7 +220,7 @@ export default function Settings() {
           <Card className="glass p-6 lg:col-span-2 space-y-6">
             <div>
               <Label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Brand Name</Label>
-              <Input defaultValue="Maison Aurelia" className="bg-secondary/40" />
+              <Input value={brandName} onChange={(e) => setBrandName(e.target.value)} className="bg-secondary/40" />
             </div>
             <div>
               <Label className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">Brand Colors</Label>
@@ -192,6 +230,7 @@ export default function Settings() {
                     className={`h-12 w-12 rounded-xl border-2 transition-all ${colors.includes(c) ? "border-primary scale-110 shadow-gold" : "border-border/40"}`} style={{ background: c }} />
                 ))}
               </div>
+              <p className="text-[11px] text-muted-foreground mt-2">These tones are used as accents in AI-generated creatives when "Apply Branding" is on in Studio.</p>
             </div>
             <div>
               <Label className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">Font Style</Label>
@@ -204,15 +243,33 @@ export default function Settings() {
                 ))}
               </div>
             </div>
-            <Button variant="gold" onClick={() => toast.success("Brand identity saved")}>Save Identity</Button>
+            <Button variant="gold" onClick={onSaveBrand} disabled={brandSaving}>
+              {brandSaving && <Loader2 className="h-3 w-3 animate-spin mr-1.5" />}
+              Save Identity
+            </Button>
           </Card>
 
           <Card className="glass p-6">
             <Label className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">Logo</Label>
-            <div className="aspect-square rounded-xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-3 bg-gradient-gold-soft">
-              <div className="h-16 w-16 rounded-full bg-gradient-gold flex items-center justify-center shadow-gold"><Gem className="h-7 w-7 text-primary-foreground" /></div>
-              <p className="font-display gold-text text-2xl">Aurelia</p>
-              <Button variant="luxe" size="sm"><Upload className="h-3 w-3" /> Replace Logo</Button>
+            <div className="aspect-square rounded-xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-3 bg-gradient-gold-soft p-4">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Brand logo" className="max-h-32 max-w-full object-contain" />
+              ) : (
+                <>
+                  <div className="h-16 w-16 rounded-full bg-gradient-gold flex items-center justify-center shadow-gold"><Gem className="h-7 w-7 text-primary-foreground" /></div>
+                  <p className="font-display gold-text text-2xl text-center">{brandName || "Your Logo"}</p>
+                </>
+              )}
+              <input ref={logoInputRef} type="file" accept="image/*" hidden onChange={onUploadLogo} />
+              <Button variant="luxe" size="sm" onClick={() => logoInputRef.current?.click()} disabled={logoUploading}>
+                {logoUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                {logoUrl ? " Replace Logo" : " Upload Logo"}
+              </Button>
+              {logoUrl && (
+                <button onClick={() => setLogoUrl("")} className="text-[11px] text-muted-foreground underline hover:text-foreground">
+                  Remove
+                </button>
+              )}
             </div>
           </Card>
         </TabsContent>

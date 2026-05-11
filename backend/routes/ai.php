@@ -57,6 +57,9 @@ function build_jewelry_prompt(string $userPrompt, ?string $sceneId, bool $hasRef
 function generate($m) {
     require_method('POST');
     $u = require_auth();
+    @set_time_limit(300);
+    @ini_set('max_execution_time', '300');
+
     $b = json_in();
 
     $prompt    = trim((string)($b['prompt'] ?? ''));

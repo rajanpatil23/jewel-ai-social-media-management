@@ -267,18 +267,31 @@ function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, 
         'Variation F: dramatic close-up on gemstone, alternate reflection pattern.',
     ];
 
-    $images = [];
-    $lastErr = null;
+    // Pre-resolve reference image parts ONCE (avoids re-reading logo from disk N times)
+    $refPart = null;
+    if ($refImage) {
+        try { $refPart = gemini_image_part($refImage); }
+        catch (Throwable $e) { throw new Exception('reference_image_failed: ' . $e->getMessage()); }
+    }
+    $extraParts = [];
+    foreach ($extraRefs as $ref) {
+        if (!$ref) continue;
+        try { $extraParts[] = gemini_image_part($ref); }
+        catch (Throwable $e) { error_log('[ai] skip extra ref: ' . $e->getMessage()); }
+    }
+
+    // Parallel curl — all N image requests fire at once
+    $mh = curl_multi_init();
+    $handles = [];
     for ($i = 0; $i < $count; $i++) {
         $seed = random_int(1, 2147483000);
         $hint = $variationHints[$i % count($variationHints)];
         $variedPrompt = $prompt . ' ' . $hint . ' [unique-seed:' . $seed . ']';
 
         $parts = [['text' => $variedPrompt]];
-        if ($refImage) $parts[] = gemini_image_part($refImage);
-        foreach ($extraRefs as $ref) {
-            if ($ref) { try { $parts[] = gemini_image_part($ref); } catch (Throwable $e) { /* skip unreachable logo */ } }
-        }
+        if ($refPart) $parts[] = $refPart;
+        foreach ($extraParts as $p) $parts[] = $p;
+
         $body = json_encode([
             'contents' => [['role' => 'user', 'parts' => $parts]],
             'generationConfig' => [
@@ -287,7 +300,6 @@ function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, 
                 'seed'               => $seed,
             ],
         ]);
-
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -296,8 +308,22 @@ function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, 
             CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
             CURLOPT_POSTFIELDS     => $body,
         ]);
-        $resp = curl_exec($ch);
+        curl_multi_add_handle($mh, $ch);
+        $handles[] = $ch;
+    }
+
+    $running = null;
+    do {
+        curl_multi_exec($mh, $running);
+        if ($running) curl_multi_select($mh, 1.0);
+    } while ($running > 0);
+
+    $images = [];
+    $lastErr = null;
+    foreach ($handles as $ch) {
+        $resp = curl_multi_getcontent($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_multi_remove_handle($mh, $ch);
         curl_close($ch);
         if ($code >= 400 || !$resp) { $lastErr = "gemini $code: " . substr((string)$resp, 0, 500); continue; }
         $data = json_decode($resp, true);
@@ -305,10 +331,11 @@ function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, 
             $inline = $part['inlineData'] ?? $part['inline_data'] ?? null;
             if (!empty($inline['data'])) {
                 $images[] = 'data:' . ($inline['mimeType'] ?? $inline['mime_type'] ?? 'image/png') . ';base64,' . $inline['data'];
-                break; // one image per request — next loop iteration brings a new seed
+                break;
             }
         }
     }
+    curl_multi_close($mh);
     if (empty($images)) throw new Exception($lastErr ?: 'gemini_no_images_returned');
     return array_slice($images, 0, $count);
 }

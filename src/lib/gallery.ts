@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, tryApi } from "@/lib/api";
 
-export type GalleryItem = { src: string; label: string; createdAt: number };
+export type GalleryItem = { id?: string; src: string; label: string; createdAt: number };
 
 const KEY = "creativeGallery";
 

@@ -491,7 +491,10 @@ function GalleryPicker({ items, selected, onPick, onGenerate }: {
   onPick: (src: string) => void;
   onGenerate: () => void;
 }) {
-  if (items.length === 0) {
+  const [broken, setBroken] = useState<Set<string>>(new Set());
+  const visible = items.filter((it) => !broken.has(it.src) && !!it.src);
+
+  if (visible.length === 0) {
     return (
       <div className="py-12 text-center space-y-3">
         <Images className="h-10 w-10 mx-auto text-muted-foreground" />
@@ -503,18 +506,24 @@ function GalleryPicker({ items, selected, onPick, onGenerate }: {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">{items.length} creative{items.length !== 1 ? "s" : ""} available</p>
+        <p className="text-xs text-muted-foreground">{visible.length} creative{visible.length !== 1 ? "s" : ""} available</p>
         <Button variant="ghost" size="sm" onClick={onGenerate} className="gap-1.5 text-xs"><Sparkles className="h-3.5 w-3.5" /> Generate new</Button>
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[60vh] overflow-y-auto pr-1">
-        {items.map((item, i) => {
+        {visible.map((item, i) => {
           const active = item.src === selected;
           return (
             <button key={`${item.src}-${i}`} onClick={() => onPick(item.src)}
-              className={`relative aspect-square rounded-md overflow-hidden border-2 transition-all ${
+              className={`relative aspect-square rounded-md overflow-hidden border-2 transition-all bg-secondary/40 ${
                 active ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-border"
               }`}>
-              <img src={item.src} alt={item.label} className="w-full h-full object-cover" loading="lazy" />
+              <img
+                src={item.src}
+                alt={item.label}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                onError={() => setBroken((s) => new Set(s).add(item.src))}
+              />
               {active && (
                 <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
                   <CheckCircle2 className="h-3 w-3" />
@@ -527,7 +536,6 @@ function GalleryPicker({ items, selected, onPick, onGenerate }: {
     </div>
   );
 }
-
 function SectionCard({ step, title, subtitle, right, children }: {
   step: number; title: string; subtitle?: string; right?: React.ReactNode; children: React.ReactNode;
 }) {

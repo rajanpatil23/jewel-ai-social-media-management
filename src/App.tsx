@@ -12,6 +12,7 @@ import Analytics from "./pages/Analytics";
 import Scheduler from "./pages/Scheduler";
 import Connections from "./pages/Connections";
 import Settings from "./pages/Settings";
+import Gallery from "./pages/Gallery";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Privacy from "./pages/Privacy";
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/connections" element={protect(<Connections />)} />
             <Route path="/analytics" element={protect(<Analytics />)} />
             <Route path="/settings" element={protect(<Settings />)} />
+            <Route path="/gallery" element={protect(<Gallery />)} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

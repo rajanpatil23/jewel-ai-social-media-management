@@ -123,7 +123,11 @@ export default function ImageGen() {
   const [referenceUrl, setReferenceUrl] = useState<string | null>(null); // backend URL after upload
   const [sceneId, setSceneId] = useState<string | null>(null);
   const [collections, setCollections] = useState<GenItem[]>([]);
-  const [gallery, setGallery] = useState<GenItem[]>(SAMPLES);
+  // Hydrate gallery from DB (and local cache); fallback to SAMPLES only when truly empty.
+  const persistedGallery = useGallery();
+  const gallery: GenItem[] = persistedGallery.length
+    ? persistedGallery.map((g) => ({ src: g.src, label: g.label }))
+    : SAMPLES;
   const [history, setHistory] = useState<{ src: string; prompt: string }[]>(
     SAMPLES.slice(0, 3).map((s) => ({ src: s.src, prompt: s.label }))
   );

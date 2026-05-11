@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -129,6 +129,12 @@ export default function ImageGen() {
   );
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Brand identity (fetched from /settings/brand) + toggle
+  const [brand, setBrand] = useState<BrandIdentity | null>(null);
+  const [applyBranding, setApplyBranding] = useState(false);
+  useEffect(() => { (async () => { setBrand(await getBrand()); })(); }, []);
+  const brandConfigured = !!(brand && (brand.brand_name || brand.logo_url || (brand.colors?.length ?? 0) > 0));
+
   // edit state
   const [editImg, setEditImg] = useState<string | null>(null);
   const [editTool, setEditTool] = useState("prompt");
@@ -150,6 +156,7 @@ export default function ImageGen() {
         ratio,
         scene,
         reference_image: referenceUrl || referenceImg, // URL preferred, data URI fallback
+        apply_branding: applyBranding,
       });
       const items: GenItem[] = res.images.map((src, i) => ({
         src,

@@ -74,18 +74,22 @@ function generate($m) {
 
     $basePrompt = build_jewelry_prompt($prompt, $sceneId, !empty($refImage));
 
-    // Apply Branding — inject brand DNA into the prompt and pass logo as extra reference.
+    // Apply Branding — inject brand mood (color/font) into the prompt.
+    // The actual logo is composited onto the final image server-side (GD) — Gemini cannot
+    // reproduce a logo accurately, so we never send it as a reference.
     $brandLogo = null;
+    $brandForOverlay = null;
     if ($applyBrand) {
         $brand = get_user_brand($u['id']);
+        $brandForOverlay = $brand;
         $brandBits = [];
-        if (!empty($brand['brand_name'])) $brandBits[] = "Brand: " . $brand['brand_name'];
+        if (!empty($brand['brand_name'])) $brandBits[] = "Brand mood: " . $brand['brand_name'];
         if (!empty($brand['colors']))     $brandBits[] = "Brand accent palette: " . implode(', ', $brand['colors'])
                                             . " — use these tones in props, background, and styling, but do NOT alter the actual metal or gemstone colors of the jewelry";
         if (!empty($brand['font']))       $brandBits[] = "Typography mood: " . $brand['font'] . " (luxury editorial)";
+        // IMPORTANT: leave a clean bottom-right area free of busy props for the logo overlay
         if (!empty($brand['logo_url'])) {
-            $brandLogo = $brand['logo_url'];
-            $brandBits[] = "Place a small, subtle brand logo watermark in the bottom-right corner using the provided logo reference (low opacity, tasteful, do not distort)";
+            $brandBits[] = "Leave the bottom-right ~18% of the frame visually clean and uncluttered (soft background, no text, no busy props) so a brand logo can be placed there in post-production";
         }
         if ($brandBits) $basePrompt .= ". " . implode('. ', $brandBits) . ".";
     }
@@ -114,7 +118,7 @@ function generate($m) {
             ], 400);
         }
 
-        $extraRefs = $brandLogo ? [$brandLogo] : [];
+        $extraRefs = []; // logo is composited locally, never sent to Gemini
         if ($provider === 'gemini') {
             $images = call_gemini_image_multi($basePrompt, $refImage, $count, $apiKey, $model, $extraRefs);
         } elseif ($provider === 'lovable') {
@@ -126,12 +130,13 @@ function generate($m) {
         }
 
         // Persist data URIs as files + auto-add to gallery so they appear everywhere
-        $persisted = persist_and_save_gallery($u['id'], $images, $prompt ?: ($sceneId ?: 'Generated'));
+        $persisted = persist_and_save_gallery($u['id'], $images, $prompt ?: ($sceneId ?: 'Generated'), $brandForOverlay);
         json_out([
             'images'        => $persisted,
             'using_own_key' => $ai['using_own'],
             'provider'      => $provider,
             'model'         => $model,
+            'branded'       => !empty($brandForOverlay['logo_url']),
         ]);
 
     } catch (Throwable $e) {
@@ -258,16 +263,18 @@ function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, 
     $model = preg_replace('#^google/#', '', $model) ?: 'gemini-2.5-flash-image';
     $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent?key=' . rawurlencode($apiKey);
 
+    // Strong, distinct scene clauses — Gemini ignores `seed` when a reference image is
+    // supplied (it locks onto identity), so we MUST vary the wording itself per image.
     $variationHints = [
-        'Variation A: tighter macro framing, slight left-side angle.',
-        'Variation B: wider composition, slight right-side angle, different background prop arrangement.',
-        'Variation C: top-down flatlay perspective, alternative styling props.',
-        'Variation D: three-quarter hero angle, alternate lighting direction and shadow shape.',
-        'Variation E: side profile view, different background tone.',
-        'Variation F: dramatic close-up on gemstone, alternate reflection pattern.',
+        'Composition variation 1: tight macro close-up framing, 35mm angle from the LEFT, soft side-lit shadow stretching to the right, props arranged in the lower-left third.',
+        'Composition variation 2: WIDE editorial framing with negative space above, hero camera angle from the RIGHT at 30°, warm rim light from behind, props clustered top-right.',
+        'Composition variation 3: TOP-DOWN flatlay perspective, perfectly overhead, fresh styling props (silk fabric folds, dried botanicals) arranged symmetrically around the piece, even diffuse lighting.',
+        'Composition variation 4: dramatic three-quarter HERO angle from slightly below, strong directional spotlight from upper-left creating a long shadow on the right, dark moody background.',
+        'Composition variation 5: SIDE PROFILE view at eye level, soft pastel background, golden-hour back-lighting creating a gentle bokeh, single small prop in foreground.',
+        'Composition variation 6: extreme MACRO close-up of the most detailed area (gemstone / clasp / centerpiece), shallow depth of field, dewdrop-like reflection highlights, abstract blurred backdrop.',
     ];
 
-    // Pre-resolve reference image parts ONCE (avoids re-reading logo from disk N times)
+    // Pre-resolve reference image parts ONCE
     $refPart = null;
     if ($refImage) {
         try { $refPart = gemini_image_part($refImage); }
@@ -280,13 +287,14 @@ function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, 
         catch (Throwable $e) { error_log('[ai] skip extra ref: ' . $e->getMessage()); }
     }
 
-    // Parallel curl — all N image requests fire at once
+    // Parallel curl
     $mh = curl_multi_init();
     $handles = [];
     for ($i = 0; $i < $count; $i++) {
         $seed = random_int(1, 2147483000);
         $hint = $variationHints[$i % count($variationHints)];
-        $variedPrompt = $prompt . ' ' . $hint . ' [unique-seed:' . $seed . ']';
+        // Put the variation clause FIRST so Gemini weights it heavily, and append the rest.
+        $variedPrompt = $hint . ' ' . $prompt;
 
         $parts = [['text' => $variedPrompt]];
         if ($refPart) $parts[] = $refPart;
@@ -341,12 +349,19 @@ function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, 
 }
 
 // Save data: URIs to /uploads as real files, insert into gallery, return public URLs.
-// External URLs (https://) are left as-is but still inserted into gallery.
-function persist_and_save_gallery(string $userId, array $images, string $label): array {
+// If $brand['logo_url'] is present, the brand logo is composited onto each image (bottom-right).
+function persist_and_save_gallery(string $userId, array $images, string $label, ?array $brand = null): array {
     $cfg = cfg();
     $dir = $cfg['uploads_dir'];
     $urlBase = $cfg['uploads_url'] ?? '/api/uploads';
     if (!is_dir($dir)) @mkdir($dir, 0775, true);
+
+    // Resolve logo bytes once (if any)
+    $logoBytes = null;
+    if (!empty($brand['logo_url']) && function_exists('imagecreatefromstring')) {
+        try { $logoBytes = read_image_bytes($brand['logo_url']); }
+        catch (Throwable $e) { error_log('[ai] logo overlay skipped: ' . $e->getMessage()); }
+    }
 
     $out = [];
     $ins = db()->prepare('INSERT INTO gallery (id,user_id,src,label) VALUES (?,?,?,?)');
@@ -354,19 +369,94 @@ function persist_and_save_gallery(string $userId, array $images, string $label):
 
     foreach ($images as $img) {
         $finalUrl = $img;
+        $bytes = null; $mime = 'image/png';
         if (preg_match('#^data:([^;]+);base64,(.*)$#', $img, $m)) {
             $mime = $m[1];
             $bytes = base64_decode($m[2]);
+        } elseif (preg_match('#^https?://#', $img)) {
+            try { $bytes = read_image_bytes($img); $mime = 'image/png'; } catch (Throwable $e) { $bytes = null; }
+        }
+
+        if ($bytes) {
+            // Composite the logo if available
+            if ($logoBytes) {
+                try { $bytes = composite_logo_overlay($bytes, $logoBytes); $mime = 'image/png'; }
+                catch (Throwable $e) { error_log('[ai] composite failed: ' . $e->getMessage()); }
+            }
             $ext = $mime === 'image/jpeg' ? 'jpg' : ($mime === 'image/webp' ? 'webp' : 'png');
             $name = 'gen_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
             $path = $dir . '/' . $name;
-            if ($bytes && @file_put_contents($path, $bytes)) {
+            if (@file_put_contents($path, $bytes)) {
                 $finalUrl = rtrim($cfg['site_url'] ?? '', '/') . $urlBase . '/' . $name;
             }
         }
         try { $ins->execute([uuid(), $userId, $finalUrl, $shortLabel]); } catch (Throwable $e) { /* ignore */ }
         $out[] = $finalUrl;
     }
+    return $out;
+}
+
+// Read image bytes from a data URI, local upload URL, or remote URL.
+function read_image_bytes(string $src): string {
+    if (preg_match('#^data:[^;]+;base64,(.*)$#', $src, $m)) {
+        $b = base64_decode($m[1]);
+        if ($b === false) throw new Exception('bad_data_uri');
+        return $b;
+    }
+    $cfg = cfg();
+    $uploadsUrl = $cfg['uploads_url'] ?? '/api/uploads';
+    $uploadsDir = $cfg['uploads_dir'];
+    $local = $src;
+    $siteUrl = rtrim($cfg['site_url'] ?? '', '/');
+    if ($siteUrl && str_starts_with($local, $siteUrl)) $local = substr($local, strlen($siteUrl));
+    if (str_starts_with($local, $uploadsUrl . '/')) {
+        $path = $uploadsDir . substr($local, strlen($uploadsUrl));
+        if (is_file($path)) return file_get_contents($path);
+    }
+    $ctx = stream_context_create(['http' => ['timeout' => 10]]);
+    $b = @file_get_contents($src, false, $ctx);
+    if ($b === false) throw new Exception('image_unreadable: ' . substr($src, 0, 100));
+    return $b;
+}
+
+// Composite the brand logo into the bottom-right corner with subtle padding + shadow.
+// Returns PNG bytes. Requires GD (imagecreatefromstring).
+function composite_logo_overlay(string $bgBytes, string $logoBytes): string {
+    if (!function_exists('imagecreatefromstring')) throw new Exception('gd_not_available');
+    $bg = @imagecreatefromstring($bgBytes);
+    $lg = @imagecreatefromstring($logoBytes);
+    if (!$bg || !$lg) throw new Exception('image_decode_failed');
+
+    imagealphablending($bg, true);
+    imagesavealpha($bg, true);
+
+    $bgW = imagesx($bg); $bgH = imagesy($bg);
+    $lgW = imagesx($lg); $lgH = imagesy($lg);
+
+    // Target logo width = ~14% of the image width
+    $targetW = (int) round($bgW * 0.14);
+    $scale   = $targetW / max(1, $lgW);
+    $targetH = (int) round($lgH * $scale);
+
+    $resized = imagecreatetruecolor($targetW, $targetH);
+    imagealphablending($resized, false);
+    imagesavealpha($resized, true);
+    $transparent = imagecolorallocatealpha($resized, 0, 0, 0, 127);
+    imagefill($resized, 0, 0, $transparent);
+    imagecopyresampled($resized, $lg, 0, 0, 0, 0, $targetW, $targetH, $lgW, $lgH);
+
+    // Padding from edges = ~3% of image width
+    $pad = (int) round($bgW * 0.03);
+    $dstX = $bgW - $targetW - $pad;
+    $dstY = $bgH - $targetH - $pad;
+
+    imagealphablending($bg, true);
+    imagecopy($bg, $resized, $dstX, $dstY, 0, 0, $targetW, $targetH);
+
+    ob_start();
+    imagepng($bg);
+    $out = ob_get_clean();
+    imagedestroy($bg); imagedestroy($lg); imagedestroy($resized);
     return $out;
 }
 

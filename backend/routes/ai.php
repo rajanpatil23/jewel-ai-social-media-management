@@ -263,16 +263,18 @@ function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, 
     $model = preg_replace('#^google/#', '', $model) ?: 'gemini-2.5-flash-image';
     $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent?key=' . rawurlencode($apiKey);
 
+    // Strong, distinct scene clauses — Gemini ignores `seed` when a reference image is
+    // supplied (it locks onto identity), so we MUST vary the wording itself per image.
     $variationHints = [
-        'Variation A: tighter macro framing, slight left-side angle.',
-        'Variation B: wider composition, slight right-side angle, different background prop arrangement.',
-        'Variation C: top-down flatlay perspective, alternative styling props.',
-        'Variation D: three-quarter hero angle, alternate lighting direction and shadow shape.',
-        'Variation E: side profile view, different background tone.',
-        'Variation F: dramatic close-up on gemstone, alternate reflection pattern.',
+        'Composition variation 1: tight macro close-up framing, 35mm angle from the LEFT, soft side-lit shadow stretching to the right, props arranged in the lower-left third.',
+        'Composition variation 2: WIDE editorial framing with negative space above, hero camera angle from the RIGHT at 30°, warm rim light from behind, props clustered top-right.',
+        'Composition variation 3: TOP-DOWN flatlay perspective, perfectly overhead, fresh styling props (silk fabric folds, dried botanicals) arranged symmetrically around the piece, even diffuse lighting.',
+        'Composition variation 4: dramatic three-quarter HERO angle from slightly below, strong directional spotlight from upper-left creating a long shadow on the right, dark moody background.',
+        'Composition variation 5: SIDE PROFILE view at eye level, soft pastel background, golden-hour back-lighting creating a gentle bokeh, single small prop in foreground.',
+        'Composition variation 6: extreme MACRO close-up of the most detailed area (gemstone / clasp / centerpiece), shallow depth of field, dewdrop-like reflection highlights, abstract blurred backdrop.',
     ];
 
-    // Pre-resolve reference image parts ONCE (avoids re-reading logo from disk N times)
+    // Pre-resolve reference image parts ONCE
     $refPart = null;
     if ($refImage) {
         try { $refPart = gemini_image_part($refImage); }
@@ -285,13 +287,14 @@ function call_gemini_image_multi(string $prompt, ?string $refImage, int $count, 
         catch (Throwable $e) { error_log('[ai] skip extra ref: ' . $e->getMessage()); }
     }
 
-    // Parallel curl — all N image requests fire at once
+    // Parallel curl
     $mh = curl_multi_init();
     $handles = [];
     for ($i = 0; $i < $count; $i++) {
         $seed = random_int(1, 2147483000);
         $hint = $variationHints[$i % count($variationHints)];
-        $variedPrompt = $prompt . ' ' . $hint . ' [unique-seed:' . $seed . ']';
+        // Put the variation clause FIRST so Gemini weights it heavily, and append the rest.
+        $variedPrompt = $hint . ' ' . $prompt;
 
         $parts = [['text' => $variedPrompt]];
         if ($refPart) $parts[] = $refPart;

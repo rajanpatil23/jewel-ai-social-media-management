@@ -13,16 +13,15 @@ function writeLocal(items: GalleryItem[]) {
   window.dispatchEvent(new Event("gallery:update"));
 }
 
+// Generated images are persisted server-side by /api/ai/generate
+// (see backend/routes/ai.php → persist_and_save_gallery), so here we just
+// mirror them into local cache for instant UI updates and offline preview.
 export async function addToGallery(items: { src: string; label: string }[]) {
-  // Optimistic local update so UI stays snappy and works offline
   const now = Date.now();
   const incoming: GalleryItem[] = items.map((i, idx) => ({ ...i, createdAt: now - idx }));
   const seen = new Set(incoming.map((i) => i.src));
   const merged = [...incoming, ...readLocal().filter((i) => !seen.has(i.src))];
   writeLocal(merged);
-
-  // Best-effort persist to backend (no-op when no PHP available, e.g. preview)
-  await tryApi(() => api.post("/gallery", { items }));
 }
 
 export function useGallery(): GalleryItem[] {

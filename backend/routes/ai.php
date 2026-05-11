@@ -348,15 +348,24 @@ function gemini_image_part(string $src): array {
         return ['inlineData' => ['mimeType' => $m[1] ?: 'image/png', 'data' => $m[2]]];
     }
     $bytes = null; $mime = null;
-    $uploadsUrl = cfg()['uploads_url'] ?? '/api/uploads';
-    if (str_starts_with($src, $uploadsUrl . '/')) {
-        $path = cfg()['uploads_dir'] . substr($src, strlen($uploadsUrl));
+    $cfg = cfg();
+    $uploadsUrl = $cfg['uploads_url'] ?? '/api/uploads';
+    $uploadsDir = $cfg['uploads_dir'];
+
+    // Normalize: strip site_url prefix so absolute URLs back to ourselves resolve to disk
+    $local = $src;
+    $siteUrl = rtrim($cfg['site_url'] ?? '', '/');
+    if ($siteUrl && str_starts_with($local, $siteUrl)) $local = substr($local, strlen($siteUrl));
+
+    if (str_starts_with($local, $uploadsUrl . '/')) {
+        $path = $uploadsDir . substr($local, strlen($uploadsUrl));
         if (is_file($path)) { $bytes = file_get_contents($path); $mime = mime_content_type($path) ?: 'image/png'; }
     } elseif (preg_match('#^https?://#', $src)) {
-        $bytes = @file_get_contents($src);
+        $ctx = stream_context_create(['http' => ['timeout' => 8]]);
+        $bytes = @file_get_contents($src, false, $ctx);
         $mime = 'image/png';
     }
-    if (!$bytes) throw new Exception('reference_image_unreadable');
+    if (!$bytes) throw new Exception('reference_image_unreadable: ' . substr($src, 0, 120));
     return ['inlineData' => ['mimeType' => $mime ?: 'image/png', 'data' => base64_encode($bytes)]];
 }
 

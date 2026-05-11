@@ -179,17 +179,19 @@ function ai_test($m) {
 
 // Generate $count images in parallel via Lovable AI Gateway (Nano Banana).
 // Each request asks for a single image so we get count distinct variations.
-function call_lovable_ai_multi(string $prompt, ?string $refImage, int $count, string $apiKey, string $model): array {
+function call_lovable_ai_multi(string $prompt, ?string $refImage, int $count, string $apiKey, string $model, array $extraRefs = []): array {
     $url = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
     // Build the message content (multimodal if reference image is present)
-    if ($refImage) {
-        $content = [
-            ['type' => 'text', 'text' => $prompt],
-            ['type' => 'image_url', 'image_url' => ['url' => $refImage]],
-        ];
+    $hasImages = $refImage || !empty($extraRefs);
+    if ($hasImages) {
+        $content = [['type' => 'text', 'text' => $prompt]];
+        if ($refImage)   $content[] = ['type' => 'image_url', 'image_url' => ['url' => $refImage]];
+        foreach ($extraRefs as $ref) {
+            if ($ref) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $ref]];
+        }
     } else {
-        $content = $prompt; // string is fine
+        $content = $prompt;
     }
 
     $payload = [

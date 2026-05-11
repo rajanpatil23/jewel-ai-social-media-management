@@ -49,6 +49,8 @@ $routes = [
     '#^/ai/generate$#'                     => 'routes/ai.php:generate',
     '#^/ai/test$#'                         => 'routes/ai.php:ai_test',
     '#^/settings/ai$#'                     => 'routes/settings.php:ai_settings',
+    '#^/settings/brand$#'                  => 'routes/settings.php:brand_settings',
+    '#^/settings/prefs$#'                  => 'routes/settings.php:tone_prefs',
 
     '#^/meta/data-deletion$#'              => 'routes/meta_deletion.php:meta_data_deletion',
     '#^/meta/data-deletion/status$#'       => 'routes/meta_deletion.php:meta_data_deletion_status',

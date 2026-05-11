@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Sparkles, CalendarDays, Megaphone, Instagram, Facebook,
-  BarChart3, Settings, Workflow, Gem,
+  LayoutDashboard, Sparkles, CalendarDays, Send, Plug, Images,
+  BarChart3, Settings, Gem,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -10,20 +10,17 @@ import {
 import ekadhiLogo from "@/assets/ekadhi-logo.webp";
 
 const main = [
-  { title: "Overview", url: "/", icon: LayoutDashboard },
-  { title: "Brand Dashboard", url: "/dashboard", icon: Gem },
-  { title: "AI Content Studio", url: "/studio", icon: Sparkles },
-  { title: "Post Composer", url: "/composer", icon: Megaphone },
-  { title: "Content Calendar", url: "/calendar", icon: CalendarDays },
-  { title: "Campaigns", url: "/campaigns", icon: Megaphone },
+  { title: "AI Studio", url: "/", icon: Sparkles },
+  { title: "Gallery", url: "/gallery", icon: Images },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Post", url: "/post", icon: Send },
+  { title: "Schedule", url: "/schedule", icon: CalendarDays },
 ];
 const channels = [
-  { title: "Instagram", url: "/instagram", icon: Instagram },
-  { title: "Facebook", url: "/facebook", icon: Facebook },
+  { title: "Connections", url: "/connections", icon: Plug },
 ];
 const insights = [
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "Automation", url: "/automation", icon: Workflow },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 

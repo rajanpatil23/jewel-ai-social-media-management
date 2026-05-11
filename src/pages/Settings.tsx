@@ -10,9 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Instagram, Facebook, Upload, CheckCircle2, Gem, KeyRound, Sparkles, ExternalLink, Loader2, FlaskConical } from "lucide-react";
 import { tones } from "@/lib/mockData";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { getAiSettings, saveAiSettings, testAiConnection, type AiSettings } from "@/lib/ai";
+import { getAiSettings, saveAiSettings, testAiConnection, uploadReference, type AiSettings } from "@/lib/ai";
+import { getBrand, saveBrand, type BrandIdentity } from "@/lib/brand";
 
 const colorSwatches = ["#D4AF37","#0A0A0A","#FFFFFF","#7B1E1E","#1E3A8A","#0F766E"];
 const fonts = ["Playfair Display", "Cormorant Garamond", "Didot", "Inter", "Bodoni Moda"];
@@ -35,8 +36,15 @@ const modelsForProvider = (provider: AiSettings["provider"]) =>
 
 export default function Settings() {
   const [tone, setTone] = useState<string>("Luxury");
-  const [colors, setColors] = useState([colorSwatches[0], colorSwatches[1]]);
+
+  // Brand identity (persisted per user)
+  const [brandName, setBrandName] = useState("Ekhadi Silver Jewels");
+  const [colors, setColors] = useState<string[]>([colorSwatches[0], colorSwatches[1]]);
   const [font, setFont] = useState(fonts[0]);
+  const [logoUrl, setLogoUrl] = useState<string>("");
+  const [brandSaving, setBrandSaving] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [ai, setAi] = useState<AiSettings | null>(null);
   const [aiKey, setAiKey] = useState("");
@@ -48,8 +56,38 @@ export default function Settings() {
     (async () => {
       const s = await getAiSettings();
       if (s) { setAi(s); setAiModel(s.model); setAiProvider(s.provider as any); }
+      const b = await getBrand();
+      if (b) {
+        if (b.brand_name) setBrandName(b.brand_name);
+        if (b.colors?.length) setColors(b.colors);
+        if (b.font) setFont(b.font);
+        if (b.logo_url) setLogoUrl(b.logo_url);
+      }
     })();
   }, []);
+
+  const onSaveBrand = async () => {
+    setBrandSaving(true);
+    try {
+      await saveBrand({ brand_name: brandName, colors, font, logo_url: logoUrl });
+      toast.success("Brand identity saved");
+    } catch {
+      toast.error("Could not save brand (is the backend reachable?)");
+    } finally { setBrandSaving(false); }
+  };
+
+  const onUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setLogoUploading(true);
+    try {
+      const url = await uploadReference(f);
+      setLogoUrl(url);
+      toast.success("Logo uploaded — don't forget to Save");
+    } catch {
+      toast.error("Logo upload failed");
+    } finally { setLogoUploading(false); e.target.value = ""; }
+  };
 
   const onSaveAi = async () => {
     setAiSaving(true);

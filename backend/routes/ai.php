@@ -118,7 +118,7 @@ function generate($m) {
             ], 400);
         }
 
-        $extraRefs = $brandLogo ? [$brandLogo] : [];
+        $extraRefs = []; // logo is composited locally, never sent to Gemini
         if ($provider === 'gemini') {
             $images = call_gemini_image_multi($basePrompt, $refImage, $count, $apiKey, $model, $extraRefs);
         } elseif ($provider === 'lovable') {
@@ -130,12 +130,13 @@ function generate($m) {
         }
 
         // Persist data URIs as files + auto-add to gallery so they appear everywhere
-        $persisted = persist_and_save_gallery($u['id'], $images, $prompt ?: ($sceneId ?: 'Generated'));
+        $persisted = persist_and_save_gallery($u['id'], $images, $prompt ?: ($sceneId ?: 'Generated'), $brandForOverlay);
         json_out([
             'images'        => $persisted,
             'using_own_key' => $ai['using_own'],
             'provider'      => $provider,
             'model'         => $model,
+            'branded'       => !empty($brandForOverlay['logo_url']),
         ]);
 
     } catch (Throwable $e) {

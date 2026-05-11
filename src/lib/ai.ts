@@ -6,6 +6,7 @@ export type GenerateInput = {
   ratio?: string;
   scene?: string | null;
   reference_image?: string | null; // URL (preferred) or data URI
+  apply_branding?: boolean;
 };
 export type GenerateResult = {
   images: string[];

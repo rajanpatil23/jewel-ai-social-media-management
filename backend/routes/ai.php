@@ -111,10 +111,11 @@ function generate($m) {
             ], 400);
         }
 
+        $extraRefs = $brandLogo ? [$brandLogo] : [];
         if ($provider === 'gemini') {
-            $images = call_gemini_image_multi($basePrompt, $refImage, $count, $apiKey, $model);
+            $images = call_gemini_image_multi($basePrompt, $refImage, $count, $apiKey, $model, $extraRefs);
         } elseif ($provider === 'lovable') {
-            $images = call_lovable_ai_multi($basePrompt, $refImage, $count, $apiKey, $model);
+            $images = call_lovable_ai_multi($basePrompt, $refImage, $count, $apiKey, $model, $extraRefs);
         } elseif ($provider === 'openai') {
             $images = call_openai_image($basePrompt, $count, ['ai_api_key' => $apiKey, 'ai_model' => $model]);
         } else {

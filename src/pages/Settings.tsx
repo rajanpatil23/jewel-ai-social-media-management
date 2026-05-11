@@ -220,7 +220,7 @@ export default function Settings() {
           <Card className="glass p-6 lg:col-span-2 space-y-6">
             <div>
               <Label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Brand Name</Label>
-              <Input defaultValue="Maison Aurelia" className="bg-secondary/40" />
+              <Input value={brandName} onChange={(e) => setBrandName(e.target.value)} className="bg-secondary/40" />
             </div>
             <div>
               <Label className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">Brand Colors</Label>
@@ -230,6 +230,7 @@ export default function Settings() {
                     className={`h-12 w-12 rounded-xl border-2 transition-all ${colors.includes(c) ? "border-primary scale-110 shadow-gold" : "border-border/40"}`} style={{ background: c }} />
                 ))}
               </div>
+              <p className="text-[11px] text-muted-foreground mt-2">These tones are used as accents in AI-generated creatives when "Apply Branding" is on in Studio.</p>
             </div>
             <div>
               <Label className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">Font Style</Label>
@@ -242,15 +243,33 @@ export default function Settings() {
                 ))}
               </div>
             </div>
-            <Button variant="gold" onClick={() => toast.success("Brand identity saved")}>Save Identity</Button>
+            <Button variant="gold" onClick={onSaveBrand} disabled={brandSaving}>
+              {brandSaving && <Loader2 className="h-3 w-3 animate-spin mr-1.5" />}
+              Save Identity
+            </Button>
           </Card>
 
           <Card className="glass p-6">
             <Label className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">Logo</Label>
-            <div className="aspect-square rounded-xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-3 bg-gradient-gold-soft">
-              <div className="h-16 w-16 rounded-full bg-gradient-gold flex items-center justify-center shadow-gold"><Gem className="h-7 w-7 text-primary-foreground" /></div>
-              <p className="font-display gold-text text-2xl">Aurelia</p>
-              <Button variant="luxe" size="sm"><Upload className="h-3 w-3" /> Replace Logo</Button>
+            <div className="aspect-square rounded-xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-3 bg-gradient-gold-soft p-4">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Brand logo" className="max-h-32 max-w-full object-contain" />
+              ) : (
+                <>
+                  <div className="h-16 w-16 rounded-full bg-gradient-gold flex items-center justify-center shadow-gold"><Gem className="h-7 w-7 text-primary-foreground" /></div>
+                  <p className="font-display gold-text text-2xl text-center">{brandName || "Your Logo"}</p>
+                </>
+              )}
+              <input ref={logoInputRef} type="file" accept="image/*" hidden onChange={onUploadLogo} />
+              <Button variant="luxe" size="sm" onClick={() => logoInputRef.current?.click()} disabled={logoUploading}>
+                {logoUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                {logoUrl ? " Replace Logo" : " Upload Logo"}
+              </Button>
+              {logoUrl && (
+                <button onClick={() => setLogoUrl("")} className="text-[11px] text-muted-foreground underline hover:text-foreground">
+                  Remove
+                </button>
+              )}
             </div>
           </Card>
         </TabsContent>

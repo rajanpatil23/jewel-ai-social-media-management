@@ -64,11 +64,28 @@ function generate($m) {
     $ratio     = (string)($b['ratio'] ?? '1:1');
     $sceneId   = isset($b['scene']) ? (string)$b['scene'] : null;
     $refImage  = isset($b['reference_image']) ? (string)$b['reference_image'] : null; // URL or data URI
+    $applyBrand = !empty($b['apply_branding']);
 
     if ($prompt === '' && !$refImage) json_out(['error' => 'prompt_or_reference_required'], 400);
     if (mb_strlen($prompt) > 2000)    json_out(['error' => 'prompt_too_long'], 400);
 
     $basePrompt = build_jewelry_prompt($prompt, $sceneId, !empty($refImage));
+
+    // Apply Branding — inject brand DNA into the prompt and pass logo as extra reference.
+    $brandLogo = null;
+    if ($applyBrand) {
+        $brand = get_user_brand($u['id']);
+        $brandBits = [];
+        if (!empty($brand['brand_name'])) $brandBits[] = "Brand: " . $brand['brand_name'];
+        if (!empty($brand['colors']))     $brandBits[] = "Brand accent palette: " . implode(', ', $brand['colors'])
+                                            . " — use these tones in props, background, and styling, but do NOT alter the actual metal or gemstone colors of the jewelry";
+        if (!empty($brand['font']))       $brandBits[] = "Typography mood: " . $brand['font'] . " (luxury editorial)";
+        if (!empty($brand['logo_url'])) {
+            $brandLogo = $brand['logo_url'];
+            $brandBits[] = "Place a small, subtle brand logo watermark in the bottom-right corner using the provided logo reference (low opacity, tasteful, do not distort)";
+        }
+        if ($brandBits) $basePrompt .= ". " . implode('. ', $brandBits) . ".";
+    }
 
     $ai = resolve_user_ai($u['id']);
     $provider = $ai['provider'];
